@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[oc]
+.venv
+venv
+.env
+
+# uv
+uv.lock
+
+# Coverage
+.coverage
+coverage.xml
+
+# MkDocs
+site/
