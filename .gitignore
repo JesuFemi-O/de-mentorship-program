@@ -1,6 +1,9 @@
 # Docker volumes
 infrastructure/volumes/
 
+# Ruff
+.ruff_cache/
+
 # Python
 __pycache__/
 *.py[oc]
