@@ -2,20 +2,17 @@
 
 Worked examples covering data engineering design patterns, using a shared local stack and [kroft](https://github.com/JesuFemi-O/kroft) as the data generator.
 
-Based on concepts from *Fundamentals of Data Engineering* by Bartosz.
+Based on *Data Engineering Design Patterns* by Bartosz Konieczny.
 
 ---
 
 ## Local Stack
 
+Services are added to the stack progressively as chapters require them. The current stack:
+
 | Service | Purpose | Port |
 |---------|---------|------|
 | PostgreSQL | Primary database | 5432 |
-| MinIO | Object storage (S3-compatible) | 9000 / 9001 (console) |
-| Redpanda | Kafka-compatible message broker | 9092 |
-| Schema Registry | Avro/Protobuf schema management | 8081 |
-| Redpanda Console | Broker UI | 8080 |
-| Kafka Connect | Source/sink connectors | 8083 |
 
 ### Starting the stack
 
@@ -28,9 +25,11 @@ docker compose up -d
 ### Stopping the stack
 
 ```bash
-docker compose down         # stop containers
-docker compose down -v      # stop and remove volumes (full reset)
+docker compose down      # stop containers
+docker compose down -v   # stop and remove volumes (full reset)
 ```
+
+> Volume data is mounted to `infrastructure/volumes/` — delete that folder for a clean slate.
 
 ---
 
@@ -46,11 +45,11 @@ uv sync
 
 ```
 de-mentorship-program/
-├── infrastructure/          # shared docker-compose stack
-├── shared/                  # reusable helpers (DB connection, kroft column definitions)
+├── infrastructure/          # docker-compose stack (grows per chapter)
+├── shared/                  # reusable helpers: DB connection, kroft column definitions
+├── examples/                # standalone runnable scripts
 ├── 01_data_ingestion/       # chapter 1
-├── 02_batch_processing/     # chapter 2 (coming soon)
-└── ...
+└── ...                      # chapters added as we progress
 ```
 
 Each chapter folder contains its own `README.md` explaining the concept and scripts demonstrating it.
