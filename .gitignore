@@ -1,3 +1,6 @@
+# Docker volumes
+infrastructure/volumes/
+
 # Python
 __pycache__/
 *.py[oc]

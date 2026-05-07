@@ -23,7 +23,8 @@ ORDERS_COLUMNS = {
         protected=True,
     ),
     "customer_id": ColumnDefinition(
-        "customer_id", "UUID", lambda: str(uuid.uuid4())
+        "customer_id", "UUID", lambda: str(uuid.uuid4()),
+        protected=True
     ),
     "product": ColumnDefinition(
         "product", "TEXT",
