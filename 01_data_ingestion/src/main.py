@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Query
 
 from market_data import generate_market_prices, get_available_dates, MARKETS
@@ -46,7 +46,7 @@ def _is_api_down(date: str) -> bool:
 @app.get("/health")
 def health_check():
     """Health check endpoint."""
-    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
 @app.get("/market-prices")
