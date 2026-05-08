@@ -23,7 +23,7 @@ This creates a `.venv` directory in the project.
 ```bash
 source .venv/bin/activate  # macOS/Linux
 # or
-.venv\Scripts\activate     # Windows
+.venv/Scripts/activate     # Windows
 ```
 
 3. Install dependencies:
@@ -35,34 +35,6 @@ uv sync
 You're now ready to run the examples and work through the chapters.
 
 ---
-
-## Local Stack
-
-Services are added to the stack progressively as chapters require them. The current stack:
-
-| Service | Purpose | Port |
-|---------|---------|------|
-| PostgreSQL | Primary database | 5432 |
-
-### Starting the stack
-
-```bash
-cp .env.example .env   # configure credentials if needed
-cd infrastructure
-docker compose up -d
-```
-
----
-
-### Stopping the stack
-
-```bash
-docker compose down      # stop containers
-docker compose down -v   # stop and remove volumes (full reset)
-```
-
-> Volume data is mounted to `infrastructure/volumes/` — delete that folder for a clean slate.
-
 
 ## Structure
 
@@ -77,10 +49,8 @@ de-mentorship-program/
 
 Each chapter folder contains its own `README.md` explaining the concept and scripts demonstrating it.
 
----
-
 ## Chapters
 
-| # | Topic | Status |
-|---|-------|--------|
-| 01 | Data Ingestion | In progress |
+| #  | Topic          | Status      | Setup                                                      |
+|----|----------------|-------------| -----------------------------------------------------------|
+| 01 | Data Ingestion | In progress | [01_data_ingestion/README.md](01_data_ingestion/README.md) |
