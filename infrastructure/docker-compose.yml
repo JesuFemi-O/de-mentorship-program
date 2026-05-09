@@ -145,9 +145,8 @@ services:
 
   sftp:
     image: atmoz/sftp
-    container_name: sftp
+    volumes:
+      - ./volumes/sftp/upload:/home/naijapaveclearwatchdata/upload
     ports:
       - "2222:22"
-    volumes:
-      - ./data/sftp/upload:/home/naijapaveclearwatchdata/upload
     command: naijapaveclearwatchdata:pass:1001:1001:upload
