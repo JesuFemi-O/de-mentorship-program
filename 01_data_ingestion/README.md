@@ -4,7 +4,7 @@
 
 ## Context
 
-GreenVault has been operating for several years before hiring a Data Engineer. During that time, field agents manually collected commodity prices by visiting local markets, calling traders, and copying from public notice boards. Those prices were recorded in spreadsheets - the only price history GreenVault has.
+GreenVault has been operating for several years before hiring you as one of their Data Engineers. During that time, field agents manually collected commodity prices by visiting local markets, calling traders, and copying from public notice boards. Those prices were recorded in spreadsheets - the only price history GreenVault has.
 
 Recently, an external agricultural API started publishing daily market prices for the regions GreenVault operates in. Your job is to:
 
