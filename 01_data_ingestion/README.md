@@ -4,12 +4,12 @@
 
 ## Context
 
-GreenVault has been operating for several years before hiring a Data Engineer. During that time, field agents manually collected commodity prices by visiting local markets, calling traders, and copying from public notice boards. Those prices were recorded in spreadsheets — the only price history GreenVault has.
+GreenVault has been operating for several years before hiring a Data Engineer. During that time, field agents manually collected commodity prices by visiting local markets, calling traders, and copying from public notice boards. Those prices were recorded in spreadsheets - the only price history GreenVault has.
 
 Recently, an external agricultural API started publishing daily market prices for the regions GreenVault operates in. Your job is to:
 
-1. **Migrate** GreenVault's historical field-collected price records into the warehouse — a one-time full load
-2. **Build a daily pipeline** that fetches new prices from the API and appends them going forward — an incremental load
+1. **Migrate** GreenVault's historical field-collected price records into the warehouse - a one-time full load
+2. **Build a daily pipeline** that fetches new prices from the API and appends them going forward - an incremental load
 
 Field agents are not going away. When the API is unavailable, agents still collect prices manually and submit them as CSV. Your pipeline must handle both sources.
 
@@ -17,7 +17,7 @@ Field agents are not going away. When the API is unavailable, agents still colle
 
 ## Pipeline Overview
 
-Every record — whether from the API or a field agent CSV — follows the same two-step flow before reaching the warehouse:
+Every record - whether from the API or a field agent CSV - follows the same two-step flow before reaching the warehouse:
 
 ```mermaid
 flowchart TD
@@ -34,53 +34,53 @@ Raw files are never modified. If a load fails after landing, you can re-process 
 
 By the end of this chapter you will know how to:
 
-1. **Distinguish full load from incremental load** — when to use each and why
-2. **Land raw data before transforming** — why separating ingestion from loading matters
-3. **Execute a full load** — migrate a historical flat file into a warehouse table, handling messy real-world data
-4. **Validate against a data contract** — reject records that fail schema or constraint checks in the pipeline, not the database
-5. **Execute an incremental load** — fetch from an API and append only new records
-6. **Handle ingestion failures** — fall back to a field-collected CSV when the API is unavailable
-7. **Ensure idempotency** — re-running the pipeline for the same date range must not create duplicates
+1. **Distinguish full load from incremental load** - when to use each and why
+2. **Land raw data before transforming** - why separating ingestion from loading matters
+3. **Execute a full load** - migrate a historical flat file into a warehouse table, handling messy real-world data
+4. **Validate against a data contract** - reject records that fail schema or constraint checks in the pipeline, not the database
+5. **Execute an incremental load** - fetch from an API and append only new records
+6. **Handle ingestion failures** - fall back to a field-collected CSV when the API is unavailable
+7. **Ensure idempotency** - re-running the pipeline for the same date range must not create duplicates
 
 ---
 
 ## The Two Load Patterns
 
-### Part 1: Full Load — Historical Migration
+### Part 1: Full Load - Historical Migration
 
 GreenVault's historical prices live in a CSV exported from spreadsheets. This is a one-time migration: land the file in `raw/`, validate each record, and load what passes into PostgreSQL.
 
 **Characteristics of this dataset:**
 
-- Field-collected — some dates and markets may be missing
-- Inconsistent formatting — values may fall outside expected ranges
-- No guarantee of uniqueness — the same date/market/commodity may appear more than once
+- Field-collected - some dates and markets may be missing
+- Inconsistent formatting - values may fall outside expected ranges
+- No guarantee of uniqueness - the same date/market/commodity may appear more than once
 
 Your full load must:
 
 - Land the raw CSV in `raw/` before any processing
 - Validate each record against the data contract in the pipeline
-- Reject and log invalid records — do not halt on bad data
+- Reject and log invalid records - do not halt on bad data
 - Truncate the warehouse table before loading (this is a full replace)
 - Be re-runnable without producing duplicates
 
-### Part 2: Incremental Load — Daily API Pipeline
+### Part 2: Incremental Load - Daily API Pipeline
 
 Once the historical data is loaded, the API takes over. Each day, the pipeline fetches the latest prices, lands them in `raw/`, and appends valid records to the warehouse.
 
 **Characteristics of this source:**
 
-- Structured and consistent — conforms to the data contract
-- Append-only — each day produces new records, old records never change
-- Occasionally unavailable — fall back to field agent CSV when the API returns errors
+- Structured and consistent - conforms to the data contract
+- Append-only - each day produces new records, old records never change
+- Occasionally unavailable - fall back to field agent CSV when the API returns errors
 
 Your incremental load must:
 
 - Land the raw response in `raw/` before any processing
-- Fetch only new dates — do not re-fetch dates already in the warehouse
+- Fetch only new dates - do not re-fetch dates already in the warehouse
 - Fall back to the field agent CSV when the API is unavailable for a date
-- Validate before loading — invalid records are rejected in the pipeline, not the database
-- Be idempotent — re-running for the same date must not create duplicates
+- Validate before loading - invalid records are rejected in the pipeline, not the database
+- Be idempotent - re-running for the same date must not create duplicates
 
 ---
 
@@ -88,16 +88,16 @@ Your incremental load must:
 
 | Version | Endpoints           | Behaviour                                                          |
 |---------|---------------------|--------------------------------------------------------------------|
-| v1      | `/market-prices`    | Always succeeds — use while building your pipeline                 |
-| v2      | `/v2/market-prices` | ~20% of dates return `503` — use when practising fallback handling |
+| v1      | `/market-prices`    | Always succeeds - use while building your pipeline                 |
+| v2      | `/v2/market-prices` | ~20% of dates return `503` - use when practising fallback handling |
 
-v2 outages are deterministic — the same date always fails, so bugs are reproducible.
+v2 outages are deterministic - the same date always fails, so bugs are reproducible.
 
 ---
 
 ## Data Contract
 
-All market price records — whether from the API or a field agent CSV — must conform to this contract. Validation happens in the pipeline, not the database.
+All market price records - whether from the API or a field agent CSV - must conform to this contract. Validation happens in the pipeline, not the database.
 
 | Field            | Type     | Required | Constraints                  |
 |------------------|----------|----------|------------------------------|
@@ -120,7 +120,7 @@ All market price records — whether from the API or a field agent CSV — must 
 | `kaduna_central`  | Middle Belt |
 | `kano_central`    | North       |
 
-> The historical CSV may contain records that fail this contract. That is expected — validate, reject invalid rows, and log them.
+> The historical CSV may contain records that fail this contract. That is expected - validate, reject invalid rows, and log them.
 
 ---
 
@@ -159,14 +159,14 @@ API prices are deterministically generated from date + market + commodity. The s
 
 ## Done When
 
-### Part 1 — Full Load
+### Part 1 - Full Load
 
 - [ ] Raw historical CSV is landed in `raw/` before any processing
 - [ ] Records failing the data contract are rejected and logged in the pipeline, not the database
 - [ ] Valid records are loaded into `market_prices` in PostgreSQL
 - [ ] Re-running the migration produces the same result without duplicates
 
-### Part 2 — Incremental Load
+### Part 2 - Incremental Load
 
 - [ ] Raw API response is landed in `raw/` before any processing
 - [ ] The pipeline does not re-fetch dates already present in the warehouse
