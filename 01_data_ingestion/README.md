@@ -39,7 +39,7 @@ By the end of this chapter you will know how to:
 3. **Execute a full load** - migrate a historical flat file into a warehouse table, handling messy real-world data
 4. **Validate against a data contract** - reject records that fail schema or constraint checks in the pipeline, not the database
 5. **Execute an incremental load** - fetch from an API and append only new records
-6. **Handle ingestion failures** - fall back to a field-collected CSV when the API is unavailable
+6. **Handle ingestion failures** - recover gracefully when a data source is unavailable
 7. **Ensure idempotency** - re-running the pipeline for the same date range must not create duplicates
 
 ---
@@ -48,50 +48,31 @@ By the end of this chapter you will know how to:
 
 ### Part 1: Full Load - Historical Migration
 
-GreenVault's historical prices live in a CSV exported from spreadsheets. This is a one-time migration: land the file in `raw/`, validate each record, and load what passes into PostgreSQL.
+GreenVault's historical prices live in a CSV exported from spreadsheets. This is a one-time migration into the warehouse.
 
-**Characteristics of this dataset:**
-
-- Field-collected - some dates and markets may be missing
-- Inconsistent formatting - values may fall outside expected ranges
-- No guarantee of uniqueness - the same date/market/commodity may appear more than once
-
-Your full load must:
-
-- Land the raw CSV in `raw/` before any processing
-- Validate each record against the data contract in the pipeline
-- Reject and log invalid records - do not halt on bad data
-- Truncate the warehouse table before loading (this is a full replace)
-- Be re-runnable without producing duplicates
+The data is field-collected: some dates and markets may be missing, formatting is inconsistent, and there is no guarantee of uniqueness.
 
 ### Part 2: Incremental Load - Daily API Pipeline
 
-Once the historical data is loaded, the API takes over. Each day, the pipeline fetches the latest prices, lands them in `raw/`, and appends valid records to the warehouse.
+Once the historical data is loaded, the API takes over. Each day, the pipeline fetches the latest prices and appends them to the warehouse.
 
-**Characteristics of this source:**
-
-- Structured and consistent - conforms to the data contract
-- Append-only - each day produces new records, old records never change
-- Occasionally unavailable - fall back to field agent CSV when the API returns errors
-
-Your incremental load must:
-
-- Land the raw response in `raw/` before any processing
-- Fetch only new dates - do not re-fetch dates already in the warehouse
-- Fall back to the field agent CSV when the API is unavailable for a date
-- Validate before loading - invalid records are rejected in the pipeline, not the database
-- Be idempotent - re-running for the same date must not create duplicates
+The API serves the last 30 days of data. Each day produces new records; old records never change.
 
 ---
 
-## API Versions
+## API
 
-| Version | Endpoints           | Behaviour                                                          |
-|---------|---------------------|--------------------------------------------------------------------|
-| v1      | `/market-prices`    | Always succeeds - use while building your pipeline                 |
-| v2      | `/v2/market-prices` | ~20% of dates return `503` - use when practising fallback handling |
+The API runs locally at `http://localhost:8000`. Interactive docs are at `http://localhost:8000/docs`.
 
-v2 outages are deterministic - the same date always fails, so bugs are reproducible.
+| Endpoint             | Description                        |
+|----------------------|------------------------------------|
+| `/market-prices`     | Market prices for a given date     |
+| `/v2/market-prices`  | Market prices (v2)                 |
+| `/weather`           | Weather conditions for a given date|
+| `/v2/weather`        | Weather conditions (v2)            |
+| `/health`            | Health check                       |
+
+All endpoints accept a `date` query parameter (ISO8601, e.g. `2026-05-08`) and an optional `market` filter. See `/docs` for full request/response schemas and possible error codes.
 
 ---
 
@@ -161,15 +142,10 @@ API prices are deterministically generated from date + market + commodity. The s
 
 ### Part 1 - Full Load
 
-- [ ] Raw historical CSV is landed in `raw/` before any processing
-- [ ] Records failing the data contract are rejected and logged in the pipeline, not the database
-- [ ] Valid records are loaded into `market_prices` in PostgreSQL
-- [ ] Re-running the migration produces the same result without duplicates
+- [ ] Historical data is in `market_prices` in PostgreSQL
+- [ ] Re-running the migration produces the same result
 
 ### Part 2 - Incremental Load
 
-- [ ] Raw API response is landed in `raw/` before any processing
-- [ ] The pipeline does not re-fetch dates already present in the warehouse
-- [ ] When a date returns `503` from the API, the pipeline falls back to the field agent CSV for that date
-- [ ] Valid records are appended to `market_prices`
-- [ ] Re-running the pipeline for the same date range does not create duplicate rows
+- [ ] The pipeline runs end-to-end across the last 30 days without manual intervention
+- [ ] Re-running the pipeline for the same date range produces the same result
