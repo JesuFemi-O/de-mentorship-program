@@ -5,9 +5,12 @@ description = "Data engineering design patterns — worked examples using a loca
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "faker>=40.15.0",
     "kroft>=0.1.1",
+    "paramiko>=3.0",
     "psycopg2-binary>=2.9,<3",
     "python-dotenv>=1.0",
+    "requests>=2.28",
 ]
 
 [project.optional-dependencies]

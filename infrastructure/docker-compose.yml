@@ -15,7 +15,7 @@ services:
   sftp:
     image: atmoz/sftp
     volumes:
-      - ./volumes/sftp/upload:/home/foo/upload
+      - ./volumes/sftp/upload:/home/naijapaveclearwatchdata/upload
     ports:
       - "2222:22"
-    command: naijapave@clearwatchdata:pass:1001
+    command: naijapaveclearwatchdata:pass:1001:1001:upload
