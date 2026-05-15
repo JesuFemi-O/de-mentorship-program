@@ -23,6 +23,8 @@ from pathlib import Path
 import paramiko
 from dotenv import load_dotenv
 from faker import Faker
+from mimesis import Person as MimesisPerson
+from mimesis.locales import Locale
 
 load_dotenv(Path(__file__).parents[2] / ".env")
 
@@ -103,12 +105,13 @@ def _random_past_date(rng: random.Random, earliest: date, latest: date) -> str:
     return (earliest + timedelta(days=rng.randint(0, max(delta, 0)))).isoformat()
 
 
-def generate_csv(run_date: date, n_records: int = 20) -> str:
+def generate_csv(run_date: date, n_records: int = 50) -> str:
     # Seed both faker and the stdlib rng from the date so the output is
     # reproducible: the same --date always produces the same file.
     seed = int(run_date.strftime("%Y%m%d"))
     Faker.seed(seed)
-    fake = Faker(["en_NG", "en_GB"])   # Nigerian English locale with GB fallback
+    fake = Faker(["en_NG", "en_GB"])
+    mp = MimesisPerson(Locale.EN, seed=seed)
     rng = random.Random(seed)
 
     file_generated_at = f"{run_date} 09:00:00"
@@ -131,15 +134,15 @@ def generate_csv(run_date: date, n_records: int = 20) -> str:
         last_reviewed = max(last_reviewed, listed)
 
         if entity_type == "PERSON":
-            name = f"{fake.first_name()} Doe"
+            name = f"{fake.first_name()} {mp.last_name()}"
             dob = fake.date_of_birth(minimum_age=25, maximum_age=75).isoformat()
             reg = ""
             aliases = _aliases(name, rng)
         else:
-            name = f"Doe {fake.word().title()} Ltd"
+            name = f"{fake.word().title()} {fake.word().title()} Ltd-{i:03d}"
             dob = ""
             reg = f"RC{rng.randint(100000, 999999)}"
-            aliases = f"Doe {fake.word().title()}|D.{fake.word().title()} Ltd"
+            aliases = f"{fake.word().title()} {fake.word().title()}|{fake.word().title()} Ltd"
 
         writer.writerow({
             "vendor_entity_id":    f"CW-{i:06d}",
@@ -165,7 +168,7 @@ def generate_csv(run_date: date, n_records: int = 20) -> str:
 # SFTP upload
 # ---------------------------------------------------------------------------
 
-def upload_via_sftp(content: str, filename: str) -> None:
+def upload_via_sftp(content: str, filename: str, no_overwrite: bool = False) -> None:
     transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
     transport.connect(username=SFTP_USER, password=SFTP_PASS)
     sftp = paramiko.SFTPClient.from_transport(transport)
@@ -175,6 +178,26 @@ def upload_via_sftp(content: str, filename: str) -> None:
             sftp.stat(SFTP_REMOTE_DIR)
         except FileNotFoundError:
             sftp.mkdir(SFTP_REMOTE_DIR)
+
+        # Find any existing watchlist files from previous runs
+        existing = [
+            f.filename
+            for f in sftp.listdir_attr(SFTP_REMOTE_DIR)
+            if f.filename.startswith("clearwatch_watchlist_") and f.filename.endswith(".csv")
+        ]
+
+        if no_overwrite and existing:
+            print(
+                f"⚠ Skipped — {len(existing)} file(s) already present "
+                f"({existing[0]}{'...' if len(existing) > 1 else ''}). "
+                f"Remove --no-overwrite to replace."
+            )
+            return
+
+        # Remove stale files before uploading the new one
+        for old_file in existing:
+            sftp.remove(f"{SFTP_REMOTE_DIR}/{old_file}")
+            print(f"  Removed {old_file}")
 
         remote_path = f"{SFTP_REMOTE_DIR}/{filename}"
 
@@ -207,14 +230,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--records",
         type=int,
-        default=20,
+        default=50,
         metavar="N",
-        help="Number of watchlist records to generate (default: 20)",
+        help="Number of watchlist records to generate (default: 50)",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the CSV to stdout without uploading",
+    )
+    parser.add_argument(
+        "--no-overwrite",
+        action="store_true",
+        help="Skip the upload if a file for this date already exists on the server",
     )
     args = parser.parse_args()
 
@@ -228,4 +256,4 @@ if __name__ == "__main__":
         print()
         print(content)
     else:
-        upload_via_sftp(content, filename)
+        upload_via_sftp(content, filename, no_overwrite=args.no_overwrite)
