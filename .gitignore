@@ -1,5 +1,6 @@
 # Docker volumes
 infrastructure/volumes/
+infrastructure/data/
 
 # Ruff
 .ruff_cache/
