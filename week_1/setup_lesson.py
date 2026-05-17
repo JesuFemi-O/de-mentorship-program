@@ -11,8 +11,8 @@ correct published rate for each day from the local copy - no repeated
 network requests.
 
 Usage:
-    python 01_data_ingestion_full_load/setup_lesson.py                     # demo week
-    python 01_data_ingestion_full_load/setup_lesson.py --week 2026-01-05   # any Monday
+    python 01_data_ingestion_full_load/setup_lesson.py              # current week
+    python 01_data_ingestion_full_load/setup_lesson.py --week 2026-01-05 # any date in the target week
     python 01_data_ingestion_full_load/setup_lesson.py --output-dir data/cbn
 
 Files written:
@@ -20,17 +20,13 @@ Files written:
 """
 
 import argparse
+import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-import sys
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from shared.cbn.ingest_cbn_fx import fetch_all_records, extract_for_date, write_csv
-
-# A Monday in a week where CBN published on all five business days.
-DEMO_WEEK_MONDAY = date(2026, 5, 4)
-
 
 def generate_week(monday: date, output_dir: Path) -> None:
     print("Fetching CBN rate history (one request for all 7 days)…")
@@ -51,25 +47,27 @@ def generate_week(monday: date, output_dir: Path) -> None:
 
 
 if __name__ == "__main__":
+    CURRENT_DATE = date.today()
     parser = argparse.ArgumentParser(
         description="Generate a week of CBN FX rate CSVs for the full-load lesson"
     )
     parser.add_argument(
         "--week",
-        default=DEMO_WEEK_MONDAY.isoformat(),
+        default=CURRENT_DATE.isoformat(),
         metavar="YYYY-MM-DD",
-        help="Monday of the desired week (default: %(default)s)",
+        help="Any date in the target week (default: %(default)s)",
     )
+    default_output_dir = Path(__file__).parent / "data" / "cbn"
     parser.add_argument(
         "--output-dir",
-        default="data/cbn",
+        default=str(default_output_dir),
         metavar="DIR",
         help="Directory to write CSV files (default: %(default)s)",
     )
     args = parser.parse_args()
 
-    monday = date.fromisoformat(args.week)
-    if monday.weekday() != 0:
-        parser.error(f"{args.week} is not a Monday (weekday={monday.weekday()})")
-
-    generate_week(monday, Path(args.output_dir))
+    anchor = date.fromisoformat(args.week)
+    if anchor.weekday() >= 5:
+        print("Note: date falls on a weekend — week will include forward-filled rows for Saturday/Sunday.")
+    start_date = anchor - timedelta(days=anchor.weekday())
+    generate_week(start_date, Path(args.output_dir))

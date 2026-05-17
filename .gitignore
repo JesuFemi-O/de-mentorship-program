@@ -22,3 +22,5 @@ site/
 
 .pytest_cache
 .mypy_cache
+
+week_1/data
