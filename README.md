@@ -13,6 +13,8 @@ Based on *Data Engineering Design Patterns* by Bartosz Konieczny.
 - [`uv`](https://docs.astral.sh/uv/) for Python dependency management
 - `jq` and `awscli` (for `make deploy` bucket/connector targets)
 
+> **Windows users:** install [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) before proceeding. All commands should be run inside your WSL 2 terminal.
+
 ---
 
 ## Quick start
@@ -130,8 +132,10 @@ de-mentorship-program/
 ├── examples/
 │   └── interactive.py            # kroft simulation CLI
 └── 01_data_ingestion/
-    └── nafdac/
-        └── ingest_nafdac.py      # scrapes ~11 700 NAFDAC Greenbook products
+    ├── nafdac/
+    │   └── ingest_nafdac.py      # scrapes ~11 700 NAFDAC Greenbook products
+    └── clearwatch/
+        └── simulate_vendor_day.py  # simulates vendor watchlist data via SFTP
 ```
 
 Each chapter folder has its own `README.md` explaining the concept and how to run its scripts.
