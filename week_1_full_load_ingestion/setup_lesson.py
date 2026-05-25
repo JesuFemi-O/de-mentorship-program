@@ -11,9 +11,9 @@ correct published rate for each day from the local copy - no repeated
 network requests.
 
 Usage:
-    python 01_data_ingestion_full_load/setup_lesson.py              # current week
-    python 01_data_ingestion_full_load/setup_lesson.py --week 2026-01-05 # any date in the target week
-    python 01_data_ingestion_full_load/setup_lesson.py --output-dir data/cbn
+    python week_1_full_load_ingestion/setup_lesson.py              # current week
+    python week_1_full_load_ingestion/setup_lesson.py --week 2026-01-05 # any date in the target week
+    python week_1_full_load_ingestion/setup_lesson.py --output-dir data/cbn
 
 Files written:
     data/cbn/cbn_fx_rates_YYYY-MM-DD.csv  (× 7)
@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 from shared.cbn.ingest_cbn_fx import fetch_all_records, extract_for_date, write_csv
 
 def generate_week(monday: date, output_dir: Path) -> None:
-    print("Fetching CBN rate history (one request for all 7 days)…")
+    print("Generating CBN rate history for all 7 days…")
     all_records = fetch_all_records()
     print(f"  {len(all_records)} records fetched.\n")
 
@@ -67,6 +67,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     anchor = date.fromisoformat(args.week)
+    if anchor > CURRENT_DATE:
+        parser.error(f"--week must not be a future date (got {anchor}, today is {CURRENT_DATE})")
     if anchor.weekday() >= 5:
         print("Note: date falls on a weekend — week will include forward-filled rows for Saturday/Sunday.")
     start_date = anchor - timedelta(days=anchor.weekday())

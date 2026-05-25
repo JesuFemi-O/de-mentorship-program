@@ -1,13 +1,16 @@
 """
-Fetches CBN official NGN exchange rates and writes a dated CSV.
+Generates CBN-style NGN exchange rate CSVs from a seeded synthetic model.
 
 This is a course data-preparation script - it produces the source file
 students will use in the full-load lesson.  Loading into the warehouse
 is the student exercise.
 
-Weekend / public-holiday handling: CBN does not publish on those days.
-The script detects this automatically - if the API's most recent publication
-is before the requested date, rows are marked is_forward_filled=TRUE.
+Rates are derived from a real 2026-05-14 CBN snapshot and vary day-to-day
+via a date-seeded RNG (±0.8% per currency per day), so the same date always
+produces identical output (idempotent) but adjacent days differ visibly.
+
+Weekend / public-holiday handling: weekends are omitted from the synthetic
+history so the forward-fill logic triggers naturally for Saturday/Sunday.
 
 Usage:
     python ingest_cbn_fx.py                           # today
@@ -18,15 +21,9 @@ Usage:
 
 import argparse
 import csv
-from datetime import date
+import random
+from datetime import date, timedelta
 from pathlib import Path
-
-import requests
-from dotenv import load_dotenv
-
-load_dotenv(Path(__file__).parents[2] / ".env")
-
-CBN_API = "https://www.cbn.gov.ng/api/GetAllExchangeRates"
 
 # Maps CBN currency name (title-cased) → ISO 4217 code
 # Must stay in sync with cbn_currency_map seed in infrastructure/postgres/init.sql
@@ -46,6 +43,26 @@ CBN_CURRENCY_MAP: dict[str, str] = {
     "Uae Dirham":         "AED",
 }
 
+# Baseline rates anchored to the real 2026-05-14 CBN snapshot.
+# Tuple: (central_rate, half_spread)  — buying = central - spread, selling = central + spread.
+_BASE_RATES: dict[str, tuple[float, float]] = {
+    "Cfa":                (2.4368,    0.0100),
+    "Yuan/Renminbi":      (201.9670,  0.0737),
+    "Danish Krona":       (214.4143,  0.0782),
+    "Euro":               (1602.3926, 0.5847),
+    "Yen":                (8.6794,    0.0032),
+    "Riyal":              (365.1734,  0.1332),
+    "South African Rand": (83.2035,   0.0304),
+    "Sdr":                (1882.0610, 0.6867),
+    "Swiss Franc":        (1751.5161, 0.6391),
+    "Pounds Sterling":    (1850.7066, 0.6753),
+    "Us Dollar":          (1370.3862, 0.5000),
+    "Waua":               (1879.4750, 0.6858),
+    "Uae Dirham":         (373.0769,  0.1361),
+}
+
+_HISTORY_START = date(2024, 1, 1)
+
 FIELDNAMES = [
     "currency_code",
     "currency",
@@ -59,25 +76,43 @@ FIELDNAMES = [
 
 
 # ---------------------------------------------------------------------------
-# API
+# Synthetic rate generation
 # ---------------------------------------------------------------------------
 
 def fetch_all_records() -> list[dict]:
-    """Fetch the full CBN exchange rate history (one API call, ~60k records)."""
-    resp = requests.get(
-        CBN_API,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36"
-            ),
-            "Referer": "https://www.cbn.gov.ng/rates/ExchRateByCurrency.html",
-        },
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    """
+    Generate a synthetic CBN exchange rate history — no network calls required.
+
+    Each weekday gets its own date-seeded RNG so the same date always yields
+    identical rates (idempotent) but adjacent days differ by up to ±0.8% per
+    currency.  Weekends are omitted so extract_for_date's forward-fill logic
+    triggers naturally for Saturday/Sunday requests.
+    """
+    end_date = date.today() + timedelta(days=30)
+    records: list[dict] = []
+    record_id = 1
+    current = _HISTORY_START
+
+    while current <= end_date:
+        if current.weekday() < 5:  # Mon–Fri only
+            rng = random.Random(int(current.strftime("%Y%m%d")))
+            date_str = current.isoformat()
+            for cbn_name, (base_central, base_spread) in _BASE_RATES.items():
+                mult = 1.0 + rng.uniform(-0.008, 0.008)
+                central = round(base_central * mult, 4)
+                spread = round(base_spread * mult, 4)
+                records.append({
+                    "id":          record_id,
+                    "ratedate":    date_str,
+                    "currency":    cbn_name,
+                    "buyingrate":  round(central - spread, 4),
+                    "centralrate": central,
+                    "sellingrate": round(central + spread, 4),
+                })
+                record_id += 1
+        current += timedelta(days=1)
+
+    return records
 
 
 def extract_for_date(all_records: list[dict], snapshot_date: date) -> tuple[list[dict], bool]:
@@ -97,9 +132,6 @@ def extract_for_date(all_records: list[dict], snapshot_date: date) -> tuple[list
     rate_date = max(eligible_dates)
     forward_filled = rate_date < cutoff
 
-    # CBN occasionally publishes duplicate rows for the same currency on the same
-    # date (e.g. CFA appears twice on 2026-05-04, second entry is a paste error).
-    # Keep the first occurrence (lowest id) to preserve the correct value.
     seen: set[str] = set()
     rows = []
     for r in sorted(all_records, key=lambda x: x.get("id", 0)):
@@ -154,11 +186,11 @@ def ingest(
     output_dir: Path = Path("."),
     dry_run: bool = False,
 ) -> None:
-    print(f"Fetching CBN rates for {snapshot_date}...")
+    print(f"Generating CBN rates for {snapshot_date}...")
     rows, forward_filled = fetch_rates(snapshot_date)
 
     if not rows:
-        print("  No data returned from CBN API.")
+        print("  No rates available for this date.")
         return
 
     label = "forward-filled from " + rows[0]["rate_date"] if forward_filled else "published"
