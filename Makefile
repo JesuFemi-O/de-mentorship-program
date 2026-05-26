@@ -1,4 +1,5 @@
 .PHONY: help up down restart logs ps clean clean-data \
+        metabase-db metabase-setup \
         topics-list topics-describe topics-delete topics-consume \
         buckets buckets-list \
         connectors connectors-list connectors-status connectors-delete \
@@ -33,6 +34,8 @@ up:  ## Start the full stack
 	docker compose -f $(COMPOSE_FILE) up -d --build
 	@echo "Waiting for services to become healthy..."
 	@sleep 10
+	@$(MAKE) --no-print-directory metabase-db
+	@$(MAKE) --no-print-directory metabase-setup
 	@$(MAKE) --no-print-directory verify
 
 down:  ## Stop and remove containers
@@ -49,6 +52,16 @@ ps:  ## Show running services
 
 clean:  ## Stop containers and remove volumes
 	docker compose -f $(COMPOSE_FILE) down -v
+
+metabase-setup:  ## Provision Metabase: admin, database, dashboard (idempotent)
+	uv run python infrastructure/metabase/setup.py
+
+metabase-db:  ## Ensure metabaseappdb exists in postgres (idempotent)
+	@docker exec postgres psql -U $${POSTGRES_USER:-postgres} -tc \
+	  "SELECT 1 FROM pg_database WHERE datname = 'metabaseappdb'" \
+	  | grep -q 1 \
+	  || (echo "Creating metabaseappdb..." && \
+	      docker exec postgres psql -U $${POSTGRES_USER:-postgres} -c "CREATE DATABASE metabaseappdb;")
 
 clean-data:  ## Nuke all bind-mounted state (requires sudo)
 	docker compose -f $(COMPOSE_FILE) down
@@ -126,6 +139,8 @@ verify:  ## Sanity-check the stack
 	@$(AWSCMD) s3 ls > /dev/null 2>&1 && echo "OK" || echo "FAILED"
 	@echo "--- Postgres ---"
 	@docker exec postgres pg_isready -U postgres > /dev/null && echo "OK" || echo "FAILED"
+	@echo "--- Metabase ---"
+	@curl -fsS http://localhost:3000/api/health > /dev/null && echo "OK" || echo "FAILED (still starting?)"
 
 smoke:  ## Insert a test row to trigger CDC
 	@docker exec postgres psql -U postgres -d cdcdemo -c \

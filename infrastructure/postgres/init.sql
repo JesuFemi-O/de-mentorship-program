@@ -1,3 +1,5 @@
+CREATE DATABASE metabaseappdb;
+
 CREATE SCHEMA IF NOT EXISTS inventory;
 
 CREATE TABLE inventory.customers (
