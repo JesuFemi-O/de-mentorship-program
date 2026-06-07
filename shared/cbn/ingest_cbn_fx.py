@@ -66,12 +66,20 @@ _HISTORY_START = date(2024, 1, 1)
 FIELDNAMES = [
     "currency_code",
     "currency",
+    "buying_rate",
+    "central_rate",
+    "selling_rate",
+    "is_forward_filled",
+]
+
+FIELDNAMES_WITH_RATE_DATE = [
+    "currency_code",
+    "currency",
     "rate_date",
     "buying_rate",
     "central_rate",
     "selling_rate",
     "is_forward_filled",
-    "snapshot_date",
 ]
 
 
@@ -153,7 +161,6 @@ def extract_for_date(all_records: list[dict], snapshot_date: date) -> tuple[list
             "central_rate":      r["centralrate"],
             "selling_rate":      r["sellingrate"],
             "is_forward_filled": forward_filled,
-            "snapshot_date":     snapshot_date.isoformat(),
         })
     return rows, forward_filled
 
@@ -167,11 +174,17 @@ def fetch_rates(snapshot_date: date) -> tuple[list[dict], bool]:
 # CSV
 # ---------------------------------------------------------------------------
 
-def write_csv(rows: list[dict], snapshot_date: date, output_dir: Path = Path(".")) -> Path:
+def write_csv(
+    rows: list[dict],
+    snapshot_date: date,
+    output_dir: Path = Path("."),
+    include_rate_date: bool = False,
+) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     out = output_dir / f"cbn_fx_rates_{snapshot_date}.csv"
+    fieldnames = FIELDNAMES_WITH_RATE_DATE if include_rate_date else FIELDNAMES
     with open(out, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=FIELDNAMES)
+        writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
     return out.resolve()
@@ -185,6 +198,7 @@ def ingest(
     snapshot_date: date,
     output_dir: Path = Path("."),
     dry_run: bool = False,
+    include_rate_date: bool = False,
 ) -> None:
     print(f"Generating CBN rates for {snapshot_date}...")
     rows, forward_filled = fetch_rates(snapshot_date)
@@ -214,7 +228,7 @@ def ingest(
             )
         return
 
-    csv_path = write_csv(rows, snapshot_date, output_dir)
+    csv_path = write_csv(rows, snapshot_date, output_dir, include_rate_date=include_rate_date)
     print(f"✓ Written to {csv_path}")
 
 
@@ -241,10 +255,16 @@ if __name__ == "__main__":
         action="store_true",
         help="Print rates to stdout, write no files",
     )
+    parser.add_argument(
+        "--rate-date",
+        action="store_true",
+        help="Include rate_date column in the CSV (phase 2 format)",
+    )
     args = parser.parse_args()
 
     ingest(
         date.fromisoformat(args.date),
         output_dir=Path(args.output_dir),
         dry_run=args.dry_run,
+        include_rate_date=args.rate_date,
     )

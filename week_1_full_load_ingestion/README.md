@@ -27,7 +27,6 @@ CBN (Central Bank of Nigeria) official NGN exchange rates - 13 currencies, one s
 | `central_rate` | Mid-market rate |
 | `selling_rate` | Bank selling rate |
 | `is_forward_filled` | `True` if the CBN did not publish that day (weekend/holiday) and the previous weekday's rate was carried forward |
-| `snapshot_date` | The date the file represents |
 
 CBN does not publish on weekends or public holidays. Saturday and Sunday files carry Friday's rates with `is_forward_filled=True`. Your pipeline should handle this transparently - do not skip or drop forward-filled rows.
 
@@ -64,40 +63,30 @@ The setup script has no network dependency and no required input files. The same
 
 ---
 
-## Exercise
+## In-session live coding
 
-Implement a full-load ingestion script that processes one CSV file per run.
+The coding happens during the session, not as homework. You follow along on your own machine as the instructor builds the pipeline live.
 
-### Target table
+### Demo 1 — Build the pipeline
 
-Create this table in the `public` schema of the local Postgres instance:
+The instructor creates the target table and writes a script that reads a CSV and loads it. You run it for Monday's file, then query the table.
 
 ```sql
 CREATE TABLE fx_rates_full (
     currency_code     VARCHAR(10)    NOT NULL,
     currency          VARCHAR(50)    NOT NULL,
-    rate_date         DATE           NOT NULL,
     buying_rate       NUMERIC(18, 4) NOT NULL,
     central_rate      NUMERIC(18, 4) NOT NULL,
     selling_rate      NUMERIC(18, 4) NOT NULL,
-    is_forward_filled BOOLEAN        NOT NULL,
-    snapshot_date     DATE           NOT NULL
+    is_forward_filled BOOLEAN        NOT NULL
 );
 ```
 
-### What your script should do
+### Demo 2 — The snapshot solution
 
-1. Accept a `--date YYYY-MM-DD` argument identifying which CSV to load
-2. Read the corresponding file from `data/cbn/`
-3. **Truncate** `fx_rates_full`
-4. Insert all 13 rows from the CSV
-5. Be idempotent - running it twice for the same date leaves the table in the same state
+The instructor adds a `snapshot_date` column, parsed from the filename, and reloads the full week. You then query for a specific day's rate.
 
-### Key questions to answer
-
-- What happens when you run the load for Monday, then run it again for Tuesday? What is in the table?
-- What should you do differently if you want to keep all seven days in the table at once?
-- Does `is_forward_filled=True` require any special handling in your load logic, or is it just another column?
+Solutions for both demos live in `solutions/` if you want to review them after the session.
 
 ---
 
@@ -117,3 +106,37 @@ with get_connection() as conn:
 ```
 
 Default credentials (from `.env.example`): `postgres / postgres` on `localhost:5432`, database `cdcdemo`.
+
+---
+
+## Assignment (due before next session)
+
+### Part 1 — Coding
+
+Complete the skeleton in [`assignment/ingest.py`](assignment/ingest.py).
+
+It builds on Demo 2: your goal is a full-load pipeline that accumulates history instead of overwriting the table on every run.
+
+Eight TODOs guide you through the implementation:
+
+| TODO | What to do |
+| --- | --- |
+| 1 | Write the `CREATE TABLE IF NOT EXISTS` statement with all columns including `snapshot_date` |
+| 2 | Write the `DELETE` statement that removes existing rows for a given `snapshot_date` |
+| 3 | Write the `INSERT` statement |
+| 4 | Implement `parse_date()` to extract the date from the filename |
+| 5–8 | Implement `load()` — read the CSV, coerce types, and write to Postgres |
+
+Run it for every file in `data/cbn/phase_1/` and verify with:
+
+```sql
+SELECT snapshot_date, COUNT(*) FROM cbn_fx_rates GROUP BY 1 ORDER BY 1;
+```
+
+You should see 7 rows, each with 13 currencies. The reference solution is in `solutions/v2_snapshot_load.py` — try not to peek until you're done.
+
+### Part 2 — Real-world reflection
+
+Fill in [`assignment/discussion.md`](assignment/discussion.md) and come to the next session ready to present in 2–3 minutes.
+
+There is no right answer — the goal is to show your reasoning, not to find a textbook example.
