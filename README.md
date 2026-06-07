@@ -22,7 +22,7 @@ Based on *Data Engineering Design Patterns* by Bartosz Konieczny.
 uv sync
 
 # 2. Configure environment
-cp .env.example .env   # edit if needed — defaults work out of the box
+cp .env.example .env   # edit if needed - defaults work out of the box
 
 # 3. Start the full stack
 make up                # builds images, starts all services, runs health checks
@@ -37,7 +37,7 @@ The Redpanda Console UI is available at http://localhost:8080 once the stack is 
 
 ## Local stack
 
-All services are managed from the repo root via `make`. Never `cd infrastructure` and run compose directly — the Makefile handles the `-f` flag.
+All services are managed from the repo root via `make`. Never `cd infrastructure` and run compose directly - the Makefile handles the `-f` flag.
 
 | Service | Purpose | Port |
 |---|---|---|

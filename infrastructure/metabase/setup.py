@@ -1,6 +1,6 @@
 """
 Provision Metabase: admin user, database connection, questions, and dashboard.
-Idempotent — safe to run multiple times.
+Idempotent - safe to run multiple times.
 
 Usage:
     python infrastructure/metabase/setup.py
@@ -21,7 +21,7 @@ POSTGRES_DB = os.getenv("POSTGRES_DB", "cdcdemo")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
 
-DASHBOARD_NAME = "Week 1 — Full Load Lesson"
+DASHBOARD_NAME = "Week 1 - Full Load Lesson"
 
 QUESTIONS = [
     {
@@ -116,7 +116,7 @@ def initial_setup(token: str) -> None:
     }
     r = requests.post(f"{METABASE_URL}/api/setup", json=payload, timeout=30)
     if r.status_code == 403:
-        print("User already exists — skipping initial setup.")
+        print("User already exists - skipping initial setup.")
         return
     if r.status_code not in (200, 201):
         sys.exit(f"ERROR: Setup failed {r.status_code}: {r.text}")
@@ -236,7 +236,7 @@ def get_or_create_dashboard(session: str, card_ids: list[int]) -> int:
             )
             detail.raise_for_status()
             if not detail.json().get("dashcards") and not detail.json().get("cards"):
-                print("Dashboard has no cards — adding them now.")
+                print("Dashboard has no cards - adding them now.")
                 add_cards_to_dashboard(session, dash_id, card_ids)
             return dash_id
 
@@ -247,7 +247,7 @@ def get_or_create_dashboard(session: str, card_ids: list[int]) -> int:
             "name": DASHBOARD_NAME,
             "description": (
                 "Panel 1 works after any load. "
-                "Panel 2 (USD trend) breaks after v1_naive_load — it needs snapshot_date, "
+                "Panel 2 (USD trend) breaks after v1_naive_load - it needs snapshot_date, "
                 "which only v2_snapshot_load adds."
             ),
         },

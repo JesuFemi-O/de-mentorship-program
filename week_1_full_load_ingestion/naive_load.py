@@ -1,12 +1,12 @@
 """
-Demo 1 — Naive Full Load
+Demo 1 - Naive Full Load
 
 A full load replaces the entire table every time it runs.
 The simplest approach: TRUNCATE, then INSERT everything from the CSV.
 
-Run it once — 13 rows land in the table.
-Run it again with the same file — still 13 rows (idempotent within a day).
-Run it with Tuesday's file after Monday's — Monday's data is GONE.
+Run it once - 13 rows land in the table.
+Run it again with the same file - still 13 rows (idempotent within a day).
+Run it with Tuesday's file after Monday's - Monday's data is GONE.
 
 That last point is the lesson: naive full load does not preserve history.
 
@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 from shared.db import get_connection
 
 # ---------------------------------------------------------------------------
-# SQL — fill in the blanks
+# SQL - fill in the blanks
 # ---------------------------------------------------------------------------
 
 # TODO 1: Write the CREATE TABLE statement.
@@ -44,7 +44,7 @@ CREATE = """
 """
 
 # TODO 2: Write the TRUNCATE statement.
-#   This wipes the whole table before every load — that is what makes it
+#   This wipes the whole table before every load - that is what makes it
 #   "naive".  A single SQL keyword is enough.
 TRUNCATE = """
 -- TODO 2: write the TRUNCATE statement here
@@ -60,12 +60,12 @@ INSERT = """
 
 
 # ---------------------------------------------------------------------------
-# Load function — fill in the blanks
+# Load function - fill in the blanks
 # ---------------------------------------------------------------------------
 
 def load(csv_path: Path) -> None:
     # TODO 4: Open csv_path and read it into a list of dicts.
-    #   Use csv.DictReader — it turns each row into a dict whose keys come
+    #   Use csv.DictReader - it turns each row into a dict whose keys come
     #   from the CSV header.
     rows = []  # replace this
 
@@ -74,7 +74,7 @@ def load(csv_path: Path) -> None:
     #   Hint: row["is_forward_filled"].lower() == "true"
 
     # TODO 6: Open a database connection and run the three SQL statements in
-    #   order — CREATE, TRUNCATE, then INSERT all rows — then commit.
+    #   order - CREATE, TRUNCATE, then INSERT all rows - then commit.
     #
     #   Pattern to follow:
     #     conn = get_connection()
@@ -91,7 +91,7 @@ def load(csv_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Entry point — no changes needed below this line
+# Entry point - no changes needed below this line
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":

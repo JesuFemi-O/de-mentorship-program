@@ -40,7 +40,7 @@ ORDERS_COLUMNS = {
         "status", "TEXT",
         lambda: random.choice(["pending", "confirmed", "shipped", "delivered"]),
     ),
-    # Reserved — available for schema evolution chapters
+    # Reserved - available for schema evolution chapters
     "discount_pct": ColumnDefinition(
         "discount_pct", "FLOAT", lambda: 0.0, reserved=True
     ),

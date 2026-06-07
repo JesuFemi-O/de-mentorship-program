@@ -66,6 +66,6 @@ if __name__ == "__main__":
     if anchor > CURRENT_DATE:
         parser.error(f"--week must not be a future date (got {anchor}, today is {CURRENT_DATE})")
     if anchor.weekday() >= 5:
-        print("Note: date falls on a weekend — week will include forward-filled rows for Saturday/Sunday.")
+        print("Note: date falls on a weekend - week will include forward-filled rows for Saturday/Sunday.")
     start_date = anchor - timedelta(days=anchor.weekday())
     generate_week(start_date, output_dir)

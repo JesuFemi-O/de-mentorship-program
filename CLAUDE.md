@@ -1,4 +1,4 @@
-# CLAUDE.md — de-mentorship-program
+# CLAUDE.md - de-mentorship-program
 
 This file is the source of truth for how Claude should understand and work in this repo. Keep it updated whenever the stack, structure, or conventions change.
 
@@ -21,15 +21,15 @@ All services are defined in `infrastructure/docker-compose.yml`. Managed from th
 | schema-registry | confluentinc/cp-schema-registry:7.7.1 | 8081 | Avro schema management |
 | kafka-connect | custom (Debezium 3.5 base) | 8083 | CDC + S3 sink connectors |
 | redpanda-console | redpandadata/console:latest | 8080 | Kafka/Connect web UI |
-| seaweed-master | chrislusf/seaweedfs | — | SeaweedFS master node |
-| seaweed-volume | chrislusf/seaweedfs | — | SeaweedFS volume node |
+| seaweed-master | chrislusf/seaweedfs | - | SeaweedFS master node |
+| seaweed-volume | chrislusf/seaweedfs | - | SeaweedFS volume node |
 | seaweed-filer | chrislusf/seaweedfs | 8888 | SeaweedFS filer node |
 | seaweed-s3 | chrislusf/seaweedfs | 8333 | S3-compatible API (replaces MinIO) |
 | sftp | atmoz/sftp | 2222 | SFTP upload endpoint |
 
 Kafka-connect image is built from `infrastructure/kafka-connect/Dockerfile` (adds Avro converter + S3 sink plugin on top of Debezium).
 
-Bind-mounted data lives in `infrastructure/data/` — this directory is gitignored and safe to delete for a clean slate.
+Bind-mounted data lives in `infrastructure/data/` - this directory is gitignored and safe to delete for a clean slate.
 
 ---
 
@@ -79,13 +79,13 @@ Postgres init SQL: `infrastructure/postgres/init.sql`
 ## Python
 
 - Runtime: Python 3.10+
-- Package manager: `uv` — run `uv sync` to install
+- Package manager: `uv` - run `uv sync` to install
 - Entry point for DB connections: `shared/db.py` (`get_connection()`)
 - Shared column definitions for kroft: `shared/columns.py` (`ORDERS_COLUMNS`)
 - Linter: `ruff` (line length 88)
 - Tests: `pytest` (run from repo root)
 
-Scripts use `sys.path.insert(0, "../..")` to import from `shared/` — keep this pattern consistent across chapters.
+Scripts use `sys.path.insert(0, "../..")` to import from `shared/` - keep this pattern consistent across chapters.
 
 ---
 
@@ -93,7 +93,7 @@ Scripts use `sys.path.insert(0, "../..")` to import from `shared/` — keep this
 
 ```
 de-mentorship-program/
-├── .env.example                  # template — copy to .env at repo root
+├── .env.example                  # template - copy to .env at repo root
 ├── .gitignore
 ├── CLAUDE.md                     # this file
 ├── Makefile                      # all infra commands, points into infrastructure/
@@ -112,7 +112,7 @@ de-mentorship-program/
 │   │   └── buckets.json
 │   ├── seaweed/
 │   │   └── s3-config.json
-│   └── data/                     # gitignored — bind-mounted runtime state
+│   └── data/                     # gitignored - bind-mounted runtime state
 ├── shared/
 │   ├── db.py
 │   └── columns.py
@@ -130,10 +130,10 @@ de-mentorship-program/
 - New chapters go in a new numbered folder: `02_<topic>/`, `03_<topic>/`, etc.
 - Each chapter folder should have its own `README.md` explaining the concept and how to run its scripts.
 - Chapter scripts import shared utilities via `sys.path.insert(0, "../..")` + `from shared.x import y`.
-- New services required by a chapter are added to `infrastructure/docker-compose.yml` — update the stack table in both this file and `README.md` when you do.
+- New services required by a chapter are added to `infrastructure/docker-compose.yml` - update the stack table in both this file and `README.md` when you do.
 - New environment variables go in `.env.example` first, then document them in the `.env` section of this file.
 - Connector configs live in `infrastructure/connectors/` and are deployed via `make connectors`.
-- `infrastructure/data/` is never committed — it is the only place bind-mounted state should land.
+- `infrastructure/data/` is never committed - it is the only place bind-mounted state should land.
 
 ---
 

@@ -1,7 +1,7 @@
 [project]
 name = "de-mentorship-program"
 version = "0.1.0"
-description = "Data engineering design patterns — worked examples using a local stack"
+description = "Data engineering design patterns - worked examples using a local stack"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

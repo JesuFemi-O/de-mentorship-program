@@ -1,18 +1,18 @@
 """
-Week 1 Assignment — Full-Load Ingestion
+Week 1 Assignment - Full-Load Ingestion
 
 Goal: write a pipeline that reads a CBN FX rate CSV and loads it into a local
 DuckDB table using the full-load pattern.
 
 A full load replaces the entire table on every run.
-Run it twice with the same file and you still see 13 rows — that is idempotent.
-Run it for Monday then run it for Tuesday — Monday's data is gone.
+Run it twice with the same file and you still see 13 rows - that is idempotent.
+Run it for Monday then run it for Tuesday - Monday's data is gone.
 That loss of history is the pattern's defining tradeoff, and the point of this week.
 
 The source: a dated CBN FX rate CSV, e.g.
     week_1_full_load_ingestion/data/cbn/cbn_fx_rates_2026-06-04.csv
 
-The target: a local DuckDB file — cbn_fx.duckdb — in the current directory.
+The target: a local DuckDB file - cbn_fx.duckdb - in the current directory.
 DuckDB needs no server. Open it with:
     conn = duckdb.connect("cbn_fx.duckdb")
 
@@ -38,7 +38,7 @@ from pathlib import Path
 import duckdb
 
 # ---------------------------------------------------------------------------
-# SQL — fill in the blanks
+# SQL - fill in the blanks
 # ---------------------------------------------------------------------------
 
 # TODO 1: Write the CREATE TABLE IF NOT EXISTS statement.
@@ -54,7 +54,7 @@ CREATE = """
 """
 
 # TODO 2: Write the TRUNCATE statement.
-#   This wipes the whole table before every load — that is what makes it
+#   This wipes the whole table before every load - that is what makes it
 #   a full load.  A single SQL keyword is enough.
 TRUNCATE = """
 -- TODO 2: write the TRUNCATE statement here
@@ -69,13 +69,13 @@ INSERT = """
 
 
 # ---------------------------------------------------------------------------
-# Load function — fill in the blanks
+# Load function - fill in the blanks
 # ---------------------------------------------------------------------------
 
 
 def load(csv_path: Path) -> None:
     # TODO 4: Open csv_path and read it into a list of dicts.
-    #   Use csv.DictReader — it turns each row into a dict whose keys come
+    #   Use csv.DictReader - it turns each row into a dict whose keys come
     #   from the CSV header.
     rows: list[dict] = []  # replace this
 
@@ -100,7 +100,7 @@ def load(csv_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Entry point — no changes needed below this line
+# Entry point - no changes needed below this line
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 """
-Demo 1 — Naive full load.
+Demo 1 - Naive full load.
 
 Truncates the target table and reloads from a single CSV file.
 Run it twice for the same file: same result (idempotent).

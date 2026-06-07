@@ -44,7 +44,7 @@ CBN_CURRENCY_MAP: dict[str, str] = {
 }
 
 # Baseline rates anchored to the real 2026-05-14 CBN snapshot.
-# Tuple: (central_rate, half_spread)  — buying = central - spread, selling = central + spread.
+# Tuple: (central_rate, half_spread)  - buying = central - spread, selling = central + spread.
 _BASE_RATES: dict[str, tuple[float, float]] = {
     "Cfa":                (2.4368,    0.0100),
     "Yuan/Renminbi":      (201.9670,  0.0737),
@@ -89,7 +89,7 @@ FIELDNAMES_WITH_RATE_DATE = [
 
 def fetch_all_records() -> list[dict]:
     """
-    Generate a synthetic CBN exchange rate history — no network calls required.
+    Generate a synthetic CBN exchange rate history - no network calls required.
 
     Each weekday gets its own date-seeded RNG so the same date always yields
     identical rates (idempotent) but adjacent days differ by up to ±0.8% per

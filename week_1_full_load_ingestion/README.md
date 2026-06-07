@@ -2,7 +2,7 @@
 
 ## The pattern
 
-A **full load** replaces the entire target table with the latest snapshot from the source on every run. There is no tracking of what changed — you simply truncate and reload.
+A **full load** replaces the entire target table with the latest snapshot from the source on every run. There is no tracking of what changed - you simply truncate and reload.
 
 This is the right choice when:
 
@@ -10,13 +10,13 @@ This is the right choice when:
 - The dataset is small enough that reloading everything is cheap
 - You need the simplest possible pipeline with no state to manage
 
-The tradeoff is that you lose history on every load. Run Monday's file, then run Tuesday's — Monday's data is gone.
+The tradeoff is that you lose history on every load. Run Monday's file, then run Tuesday's - Monday's data is gone.
 
 ---
 
 ## The dataset
 
-CBN (Central Bank of Nigeria) official NGN exchange rates — 13 currencies, one snapshot per weekday.
+CBN (Central Bank of Nigeria) official NGN exchange rates - 13 currencies, one snapshot per weekday.
 
 | Field               | Description                                                                                                      |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -27,7 +27,7 @@ CBN (Central Bank of Nigeria) official NGN exchange rates — 13 currencies, one
 | `selling_rate`      | Bank selling rate                                                                                                |
 | `is_forward_filled` | `True` if the CBN did not publish that day (weekend/holiday) and the previous weekday's rate was carried forward |
 
-CBN does not publish on weekends or public holidays. Saturday and Sunday files carry Friday's rates with `is_forward_filled=True`. Your pipeline should handle this transparently — do not skip or drop forward-filled rows.
+CBN does not publish on weekends or public holidays. Saturday and Sunday files carry Friday's rates with `is_forward_filled=True`. Your pipeline should handle this transparently - do not skip or drop forward-filled rows.
 
 ---
 
@@ -59,7 +59,7 @@ python week_1_full_load_ingestion/setup_lesson.py --week 2026-05-11
 python week_1_full_load_ingestion/setup_lesson.py --output-dir /tmp/cbn
 ```
 
-This writes seven files — Monday through Sunday — to `week_1_full_load_ingestion/data/cbn/`:
+This writes seven files - Monday through Sunday - to `week_1_full_load_ingestion/data/cbn/`:
 
 ```text
 cbn_fx_rates_2026-05-11.csv   <- Monday    (published)
@@ -71,7 +71,7 @@ cbn_fx_rates_2026-05-16.csv   <- Saturday  (forward-filled from Friday)
 cbn_fx_rates_2026-05-17.csv   <- Sunday    (forward-filled from Friday)
 ```
 
-The setup script has no network dependency. The same `--week` argument always produces byte-identical output — run it as many times as needed.
+The setup script has no network dependency. The same `--week` argument always produces byte-identical output - run it as many times as needed.
 
 ---
 
@@ -79,9 +79,9 @@ The setup script has no network dependency. The same `--week` argument always pr
 
 The coding happens during the session, not as homework. You follow along on your own machine as the instructor builds the pipeline live.
 
-### Demo — Build the pipeline
+### Demo - Build the pipeline
 
-The instructor creates the target table and writes a script that reads a CSV and loads it into Postgres. You run it for Monday's file, then query the table. Then run it for Tuesday's file and query again — observe what happened to Monday's data.
+The instructor creates the target table and writes a script that reads a CSV and loads it into Postgres. You run it for Monday's file, then query the table. Then run it for Tuesday's file and query again - observe what happened to Monday's data.
 
 ```sql
 CREATE TABLE cbn_fx_rates (
@@ -123,13 +123,13 @@ Default credentials (from `.env.example`): `postgres / postgres` on `localhost:5
 
 Fill in [`assignment/discussion.md`](assignment/discussion.md) and come to the next session ready to present in 2-3 minutes.
 
-There is no right answer — the goal is to show your reasoning, not to find a textbook example.
+There is no right answer - the goal is to show your reasoning, not to find a textbook example.
 
 ### Part 2 - Coding
 
 Complete the skeleton in [`assignment/ingest.py`](assignment/ingest.py).
 
-Your goal is the same full-load pattern from the demo, but written against a local **DuckDB** file (`cbn_fx.duckdb`) instead of Postgres. DuckDB needs no server — just `import duckdb` and open a file.
+Your goal is the same full-load pattern from the demo, but written against a local **DuckDB** file (`cbn_fx.duckdb`) instead of Postgres. DuckDB needs no server - just `import duckdb` and open a file.
 
 Six TODOs guide you through the implementation:
 
@@ -152,6 +152,6 @@ print(conn.execute('SELECT * FROM cbn_fx_rates').fetchdf())
 "
 ```
 
-You should see 13 rows. Now run a different day's file and query again — what happened?
+You should see 13 rows. Now run a different day's file and query again - what happened?
 
 Reset between attempts by deleting `cbn_fx.duckdb`.

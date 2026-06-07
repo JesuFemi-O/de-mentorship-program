@@ -1,5 +1,5 @@
 """
-Interactive kroft simulation — drive your data generation from the command line.
+Interactive kroft simulation - drive your data generation from the command line.
 
 Usage:
     uv run examples/interactive.py
@@ -138,7 +138,7 @@ def main():
 
         elif choice == "u":
             if not last_ids:
-                print("  No records inserted yet — run [i] first.")
+                print("  No records inserted yet - run [i] first.")
                 continue
             fraction = prompt_float("Fraction of last batch to update (0.0–1.0)", 0.2)
             updated = engine.update_batch(last_ids, fraction=fraction, probability=1.0)
@@ -146,7 +146,7 @@ def main():
 
         elif choice == "d":
             if not last_ids:
-                print("  No records inserted yet — run [i] first.")
+                print("  No records inserted yet - run [i] first.")
                 continue
             fraction = prompt_float("Fraction of last batch to delete (0.0–1.0)", 0.1)
             deleted = engine.delete_batch(last_ids, fraction=fraction, probability=1.0)
@@ -164,7 +164,7 @@ def main():
             show_stats(engine, controller)
 
         else:
-            print("  Unknown action — choose from the menu.")
+            print("  Unknown action - choose from the menu.")
 
 
 if __name__ == "__main__":

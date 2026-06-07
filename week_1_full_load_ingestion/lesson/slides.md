@@ -101,7 +101,7 @@ How do you fix this going forward?
 *Take 2 minutes - propose a solution.*
 
 - **Keep multiple tables?** One per day - gets unwieldy fast.
-- **Add a date column?** But where does the date come from — the file doesn't have one.
+- **Add a date column?** But where does the date come from - the file doesn't have one.
 
 > We'll explore the answer in week 2.
 
@@ -113,7 +113,7 @@ How do you fix this going forward?
 | ---------------- | ----------------------------------------------------------- |
 | Strategy         | Truncate target, insert full source snapshot                |
 | Idempotent?      | Yes - run it twice, same result                             |
-| History          | Not preserved — every load replaces the entire table        |
+| History          | Not preserved - every load replaces the entire table        |
 | Change detection | Not needed - you reload everything                          |
 | Best fit         | Small reference data, complete snapshots, no delta available|
 
@@ -124,25 +124,67 @@ How do you fix this going forward?
 - **Dataset is large?** Reloading 100M rows daily is expensive - consider incremental.
 - **Consumers need real-time?** Full-load is batch by nature.
 - **Source produces deletes?** Full load handles them naturally. Incremental strategies often don't.
-- **History must be preserved?** Full load alone can't give you this — you need a different pattern.
+- **History must be preserved?** Full load alone can't give you this - you need a different pattern.
 - **Source schema changes?** Your pipeline owns the contract - validate the file before loading.
 
 ---
 
 ## Next Week - Snapshot Load
 
-Same dataset. Same source. Same pattern — but what if we stopped throwing history away?
+Same dataset. Same source. Same pattern - but what if we stopped throwing history away?
 
 ---
 
-## Assignment — due before next session
+## Assignment - due before next session
 
-Find a real system, dataset, or workflow where full-load is either the right pattern or the wrong one.
+Two parts. Both live in `week_1_full_load_ingestion/assignment/`.
 
-Come ready to present in 2–3 minutes:
+---
+
+### Part 1 - Real-world reflection
+
+Fill in `assignment/discussion.md`.
+
+Find a real system, dataset, or workflow where full-load is either the right pattern or the wrong one. Come ready to present in 2–3 minutes:
 
 1. **What is the source?** How is the data delivered?
 2. **Why does full-load fit (or not fit)?** Think about size, frequency, history, and whether the source gives you change information.
 3. **What breaks if you get it wrong?**
 
-There is no right answer — the goal is to show your reasoning.
+There is no right answer - the goal is to show your reasoning.
+
+---
+
+### Part 2 - Coding
+
+Complete `assignment/ingest.py`.
+
+Same full-load pattern from the demo, but against a local **DuckDB** file instead of Postgres. DuckDB needs no server - just `import duckdb` and open a file.
+
+Six TODOs guide you:
+
+1. Write the `CREATE TABLE IF NOT EXISTS` statement
+2. Write the `TRUNCATE` statement
+3. Write the `INSERT` statement using `?` placeholders
+4. Read the CSV with `csv.DictReader`
+5. Coerce `is_forward_filled` from string `"True"`/`"False"` to `bool`
+6. Open a DuckDB connection and run `CREATE` → `TRUNCATE` → `INSERT`
+
+Run it:
+
+```bash
+python week_1_full_load_ingestion/assignment/ingest.py \
+    week_1_full_load_ingestion/data/cbn/cbn_fx_rates_2026-06-04.csv
+```
+
+Verify:
+
+```python
+python -c "
+import duckdb
+conn = duckdb.connect('cbn_fx.duckdb')
+print(conn.execute('SELECT * FROM cbn_fx_rates').fetchdf())
+"
+```
+
+You should see 13 rows. Run a different day's file - what happened to the first day's data?

@@ -188,7 +188,7 @@ def upload_via_sftp(content: str, filename: str, no_overwrite: bool = False) -> 
 
         if no_overwrite and existing:
             print(
-                f"⚠ Skipped — {len(existing)} file(s) already present "
+                f"⚠ Skipped - {len(existing)} file(s) already present "
                 f"({existing[0]}{'...' if len(existing) > 1 else ''}). "
                 f"Remove --no-overwrite to replace."
             )
@@ -225,7 +225,7 @@ if __name__ == "__main__":
         "--date",
         required=True,
         metavar="YYYY-MM-DD",
-        help="Run date — controls file_generated_at and seeds data generation",
+        help="Run date - controls file_generated_at and seeds data generation",
     )
     parser.add_argument(
         "--records",
