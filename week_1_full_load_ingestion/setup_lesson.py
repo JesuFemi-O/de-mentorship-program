@@ -47,9 +47,15 @@ if __name__ == "__main__":
         description="Generate CBN FX rate CSVs for the full-load lesson"
     )
     parser.add_argument(
+        "date",
+        nargs="?",
+        metavar="YYYY-MM-DD",
+        help="Any date in the target week (positional)",
+    )
+    parser.add_argument(
         "--week",
         metavar="YYYY-MM-DD",
-        help="Any date in the target week (default: current week)",
+        help="Any date in the target week (alternative to positional date)",
     )
     default_output_dir = Path(__file__).parent / "data" / "cbn"
     parser.add_argument(
@@ -62,7 +68,8 @@ if __name__ == "__main__":
 
     output_dir = Path(args.output_dir)
 
-    anchor = date.fromisoformat(args.week) if args.week else CURRENT_DATE
+    anchor_str = args.date or args.week
+    anchor = date.fromisoformat(anchor_str) if anchor_str else CURRENT_DATE
     if anchor > CURRENT_DATE:
         parser.error(f"--week must not be a future date (got {anchor}, today is {CURRENT_DATE})")
     if anchor.weekday() >= 5:
