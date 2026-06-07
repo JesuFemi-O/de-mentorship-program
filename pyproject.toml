@@ -5,6 +5,7 @@ description = "Data engineering design patterns — worked examples using a loca
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "duckdb>=1.0",
     "faker>=40.15.0",
     "kroft>=0.1.1",
     "mimesis>=19.1.0",

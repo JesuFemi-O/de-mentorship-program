@@ -11,7 +11,7 @@ Run it with Tuesday's file after Monday's — Monday's data is GONE.
 That last point is the lesson: naive full load does not preserve history.
 
 Usage:
-    python week_1_full_load_ingestion/naive_load.py data/cbn/cbn_fx_rates_2026-06-04.csv
+    python week_1_full_load_ingestion/naive_load.py week_1_full_load_ingestion/data/cbn/cbn_fx_rates_2026-06-04.csv
 
 Reset between runs:
     psql -c "DROP TABLE IF EXISTS cbn_fx_rates;"

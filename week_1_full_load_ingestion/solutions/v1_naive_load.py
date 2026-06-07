@@ -6,7 +6,7 @@ Run it twice for the same file: same result (idempotent).
 Run it for Tuesday after Monday: Monday's data is gone.
 
 Usage:
-    python solutions/v1_naive_load.py data/cbn/phase_1/cbn_fx_rates_2026-05-19.csv
+    python week_1_full_load_ingestion/solutions/v1_naive_load.py week_1_full_load_ingestion/data/cbn/cbn_fx_rates_2026-05-19.csv
 
 Reset between demos:
     psql -c "DROP TABLE IF EXISTS cbn_fx_rates;"
