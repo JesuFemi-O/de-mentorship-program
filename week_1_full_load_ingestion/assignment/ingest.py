@@ -91,10 +91,6 @@ def load(csv_path: Path) -> None:
     #
     #   Pattern:
     #     conn = duckdb.connect("cbn_fx.duckdb")
-    #     conn.execute(CREATE)
-    #     conn.execute(TRUNCATE)
-    #     conn.executemany(INSERT, rows_as_tuples)
-    #     conn.close()
 
     print(f"Loaded {len(rows)} rows from {csv_path.name}")
 
