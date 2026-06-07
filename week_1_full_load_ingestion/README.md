@@ -2,7 +2,7 @@
 
 ## The pattern
 
-A **full load** replaces the entire target table with the latest snapshot from the source on every run. There is no tracking of what changed - you simply truncate and reload.
+A **full load** replaces the entire target table with the latest snapshot from the source on every run. There is no tracking of what changed — you simply truncate and reload.
 
 This is the right choice when:
 
@@ -10,25 +10,37 @@ This is the right choice when:
 - The dataset is small enough that reloading everything is cheap
 - You need the simplest possible pipeline with no state to manage
 
-The tradeoff is that you lose history on every load unless your target schema is designed to keep it (e.g. partitioned by `snapshot_date`).
+The tradeoff is that you lose history on every load. Run Monday's file, then run Tuesday's — Monday's data is gone.
 
 ---
 
 ## The dataset
 
-CBN (Central Bank of Nigeria) official NGN exchange rates - 13 currencies, one snapshot per weekday.
+CBN (Central Bank of Nigeria) official NGN exchange rates — 13 currencies, one snapshot per weekday.
 
-| Field | Description |
-| --- | --- |
-| `currency_code` | ISO 4217 code (e.g. `USD`, `EUR`) |
-| `currency` | CBN display name |
-| `rate_date` | Date the rate was published |
-| `buying_rate` | Bank buying rate |
-| `central_rate` | Mid-market rate |
-| `selling_rate` | Bank selling rate |
+| Field               | Description                                                                                                      |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `currency_code`     | ISO 4217 code (e.g. `USD`, `EUR`)                                                                                |
+| `currency`          | CBN display name                                                                                                 |
+| `buying_rate`       | Bank buying rate                                                                                                 |
+| `central_rate`      | Mid-market rate                                                                                                  |
+| `selling_rate`      | Bank selling rate                                                                                                |
 | `is_forward_filled` | `True` if the CBN did not publish that day (weekend/holiday) and the previous weekday's rate was carried forward |
 
-CBN does not publish on weekends or public holidays. Saturday and Sunday files carry Friday's rates with `is_forward_filled=True`. Your pipeline should handle this transparently - do not skip or drop forward-filled rows.
+CBN does not publish on weekends or public holidays. Saturday and Sunday files carry Friday's rates with `is_forward_filled=True`. Your pipeline should handle this transparently — do not skip or drop forward-filled rows.
+
+---
+
+## Source to target
+
+| Source (CSV column)   | Target (DuckDB column)   | Notes                                            |
+| --------------------- | ------------------------ | ------------------------------------------------ |
+| `currency_code`       | `currency_code`          | Direct copy                                      |
+| `currency`            | `currency`               | Direct copy                                      |
+| `buying_rate`         | `buying_rate`            | Direct copy                                      |
+| `central_rate`        | `central_rate`           | Direct copy                                      |
+| `selling_rate`        | `selling_rate`           | Direct copy                                      |
+| `is_forward_filled`   | `is_forward_filled`      | Cast from string `"True"`/`"False"` to `BOOLEAN` |
 
 ---
 
@@ -47,19 +59,19 @@ python week_1_full_load_ingestion/setup_lesson.py --week 2026-05-11
 python week_1_full_load_ingestion/setup_lesson.py --output-dir /tmp/cbn
 ```
 
-This writes seven files - Monday through Sunday - to `week_1_full_load_ingestion/data/cbn/`:
+This writes seven files — Monday through Sunday — to `week_1_full_load_ingestion/data/cbn/`:
 
 ```text
-cbn_fx_rates_2026-05-11.csv   ← Monday   (published)
-cbn_fx_rates_2026-05-12.csv   ← Tuesday  (published)
-cbn_fx_rates_2026-05-13.csv   ← Wednesday (published)
-cbn_fx_rates_2026-05-14.csv   ← Thursday (published)
-cbn_fx_rates_2026-05-15.csv   ← Friday   (published)
-cbn_fx_rates_2026-05-16.csv   ← Saturday (forward-filled from Friday)
-cbn_fx_rates_2026-05-17.csv   ← Sunday   (forward-filled from Friday)
+cbn_fx_rates_2026-05-11.csv   <- Monday    (published)
+cbn_fx_rates_2026-05-12.csv   <- Tuesday   (published)
+cbn_fx_rates_2026-05-13.csv   <- Wednesday (published)
+cbn_fx_rates_2026-05-14.csv   <- Thursday  (published)
+cbn_fx_rates_2026-05-15.csv   <- Friday    (published)
+cbn_fx_rates_2026-05-16.csv   <- Saturday  (forward-filled from Friday)
+cbn_fx_rates_2026-05-17.csv   <- Sunday    (forward-filled from Friday)
 ```
 
-The setup script has no network dependency and no required input files. The same `--week` argument always produces byte-identical output - run it as many times as needed.
+The setup script has no network dependency. The same `--week` argument always produces byte-identical output — run it as many times as needed.
 
 ---
 
@@ -67,12 +79,12 @@ The setup script has no network dependency and no required input files. The same
 
 The coding happens during the session, not as homework. You follow along on your own machine as the instructor builds the pipeline live.
 
-### Demo 1 — Build the pipeline
+### Demo — Build the pipeline
 
-The instructor creates the target table and writes a script that reads a CSV and loads it. You run it for Monday's file, then query the table.
+The instructor creates the target table and writes a script that reads a CSV and loads it into Postgres. You run it for Monday's file, then query the table. Then run it for Tuesday's file and query again — observe what happened to Monday's data.
 
 ```sql
-CREATE TABLE fx_rates_full (
+CREATE TABLE cbn_fx_rates (
     currency_code     VARCHAR(10)    NOT NULL,
     currency          VARCHAR(50)    NOT NULL,
     buying_rate       NUMERIC(18, 4) NOT NULL,
@@ -82,11 +94,7 @@ CREATE TABLE fx_rates_full (
 );
 ```
 
-### Demo 2 — The snapshot solution
-
-The instructor adds a `snapshot_date` column, parsed from the filename, and reloads the full week. You then query for a specific day's rate.
-
-Solutions for both demos live in `solutions/` if you want to review them after the session.
+The reference solution is in `solutions/v1_naive_load.py`.
 
 ---
 
@@ -111,32 +119,39 @@ Default credentials (from `.env.example`): `postgres / postgres` on `localhost:5
 
 ## Assignment (due before next session)
 
-### Part 1 — Coding
+### Part 1 - Real-world reflection
+
+Fill in [`assignment/discussion.md`](assignment/discussion.md) and come to the next session ready to present in 2-3 minutes.
+
+There is no right answer — the goal is to show your reasoning, not to find a textbook example.
+
+### Part 2 - Coding
 
 Complete the skeleton in [`assignment/ingest.py`](assignment/ingest.py).
 
-It builds on Demo 2: your goal is a full-load pipeline that accumulates history instead of overwriting the table on every run.
+Your goal is the same full-load pattern from the demo, but written against a local **DuckDB** file (`cbn_fx.duckdb`) instead of Postgres. DuckDB needs no server — just `import duckdb` and open a file.
 
-Eight TODOs guide you through the implementation:
+Six TODOs guide you through the implementation:
 
-| TODO | What to do |
-| --- | --- |
-| 1 | Write the `CREATE TABLE IF NOT EXISTS` statement with all columns including `snapshot_date` |
-| 2 | Write the `DELETE` statement that removes existing rows for a given `snapshot_date` |
-| 3 | Write the `INSERT` statement |
-| 4 | Implement `parse_date()` to extract the date from the filename |
-| 5–8 | Implement `load()` — read the CSV, coerce types, and write to Postgres |
+| TODO | What to do                                                     |
+| ---- | -------------------------------------------------------------- |
+| 1    | Write the `CREATE TABLE IF NOT EXISTS` statement               |
+| 2    | Write the `TRUNCATE` statement                                 |
+| 3    | Write the `INSERT` statement using `?` placeholders            |
+| 4    | Read the CSV into a list of dicts with `csv.DictReader`        |
+| 5    | Coerce `is_forward_filled` from string to `bool`               |
+| 6    | Open a DuckDB connection, run `CREATE`, `TRUNCATE`, `INSERT`   |
 
-Run it for every file in `data/cbn/phase_1/` and verify with:
+Pick any file from `data/cbn/` and run it. Verify with:
 
-```sql
-SELECT snapshot_date, COUNT(*) FROM cbn_fx_rates GROUP BY 1 ORDER BY 1;
+```python
+python -c "
+import duckdb
+conn = duckdb.connect('cbn_fx.duckdb')
+print(conn.execute('SELECT * FROM cbn_fx_rates').fetchdf())
+"
 ```
 
-You should see 7 rows, each with 13 currencies. The reference solution is in `solutions/v2_snapshot_load.py` — try not to peek until you're done.
+You should see 13 rows. Now run a different day's file and query again — what happened?
 
-### Part 2 — Real-world reflection
-
-Fill in [`assignment/discussion.md`](assignment/discussion.md) and come to the next session ready to present in 2–3 minutes.
-
-There is no right answer — the goal is to show your reasoning, not to find a textbook example.
+Reset between attempts by deleting `cbn_fx.duckdb`.

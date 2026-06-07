@@ -1,123 +1,102 @@
 """
-Week 1 Assignment — Full-Load Ingestion with Snapshot History
+Week 1 Assignment — Full-Load Ingestion
 
-Goal: build a full-load pipeline that accumulates one row per currency per day
-instead of overwriting the table on every run.
+Goal: write a pipeline that reads a CBN FX rate CSV and loads it into a local
+DuckDB table using the full-load pattern.
 
-The source: a folder of dated CBN FX rate CSVs, e.g.
-    data/cbn/phase_1/cbn_fx_rates_2026-05-19.csv
-    data/cbn/phase_1/cbn_fx_rates_2026-05-20.csv
-    ...
+A full load replaces the entire table on every run.
+Run it twice with the same file and you still see 13 rows — that is idempotent.
+Run it for Monday then run it for Tuesday — Monday's data is gone.
+That loss of history is the pattern's defining tradeoff, and the point of this week.
 
-Each file is a complete daily snapshot of 13 currencies. Your pipeline must:
+The source: a dated CBN FX rate CSV, e.g.
+    week_1_full_load_ingestion/data/cbn/cbn_fx_rates_2026-06-04.csv
 
-  1. Read a single CSV file.
-  2. Parse the snapshot date from the filename.
-  3. Stamp every row with that snapshot_date.
-  4. Delete any existing rows for that date (so re-running is safe).
-  5. Insert all rows.
+The target: a local DuckDB file — cbn_fx.duckdb — in the current directory.
+DuckDB needs no server. Open it with:
+    conn = duckdb.connect("cbn_fx.duckdb")
 
-When you run the script for every file in the folder, the table should contain
-the full week's history — one partition per snapshot_date.
+Usage (run from the repo root):
+    python week_1_full_load_ingestion/assignment/ingest.py \\
+        week_1_full_load_ingestion/data/cbn/cbn_fx_rates_2026-06-04.csv
 
-Usage:
-    python assignment/ingest.py data/cbn/phase_1/cbn_fx_rates_2026-05-19.csv
-    python assignment/ingest.py data/cbn/phase_1/cbn_fx_rates_2026-05-20.csv
-    ...
-
-Verify with psql:
-    SELECT snapshot_date, COUNT(*) FROM cbn_fx_rates GROUP BY 1 ORDER BY 1;
-
-Expected: 7 rows (one per day), each with 13 currencies.
+Verify:
+    python -c "
+    import duckdb
+    conn = duckdb.connect('cbn_fx.duckdb')
+    print(conn.execute('SELECT * FROM cbn_fx_rates').fetchdf())
+    "
 
 Reset between attempts:
-    psql -c "DROP TABLE IF EXISTS cbn_fx_rates;"
+    rm -f cbn_fx.duckdb
 """
 
 import csv
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parents[2]))
-from shared.db import get_connection
+import duckdb
 
 # ---------------------------------------------------------------------------
 # SQL — fill in the blanks
 # ---------------------------------------------------------------------------
 
-# TODO 1: Define the CREATE TABLE statement.
-#   Columns needed:
-#     currency_code     TEXT
-#     currency          TEXT
-#     buying_rate       NUMERIC(12, 4)
-#     central_rate      NUMERIC(12, 4)
-#     selling_rate      NUMERIC(12, 4)
+# TODO 1: Write the CREATE TABLE IF NOT EXISTS statement.
+#   Columns:
+#     currency_code     VARCHAR
+#     currency          VARCHAR
+#     buying_rate       DOUBLE
+#     central_rate      DOUBLE
+#     selling_rate      DOUBLE
 #     is_forward_filled BOOLEAN
-#     snapshot_date     DATE          ← this is the column that stores which
-#                                        file the row came from
-#
-#   Use CREATE TABLE IF NOT EXISTS so the script is idempotent.
 CREATE = """
 -- TODO 1: write the CREATE TABLE IF NOT EXISTS statement here
 """
 
-# TODO 2: Define the DELETE statement.
-#   It should delete all rows where snapshot_date equals the date we are
-#   about to load.  Use %(snapshot_date)s as the placeholder.
-DELETE = """
--- TODO 2: write the DELETE statement here
+# TODO 2: Write the TRUNCATE statement.
+#   This wipes the whole table before every load — that is what makes it
+#   a full load.  A single SQL keyword is enough.
+TRUNCATE = """
+-- TODO 2: write the TRUNCATE statement here
 """
 
-# TODO 3: Define the INSERT statement.
-#   Insert one row with all columns, using %(column_name)s placeholders.
+# TODO 3: Write the INSERT statement.
+#   Insert one row using ? as the placeholder for each value.
+#   The order of ? must match the order you pass values in load().
 INSERT = """
 -- TODO 3: write the INSERT statement here
 """
 
 
 # ---------------------------------------------------------------------------
-# Helpers — fill in the blanks
+# Load function — fill in the blanks
 # ---------------------------------------------------------------------------
 
 
-def parse_date(path: Path):
-    """Extract the YYYY-MM-DD date from a filename like cbn_fx_rates_2026-05-19.csv."""
-    import re
-    from datetime import date
-
-    # TODO 4: Use re.search to find the date pattern in path.name.
-    #   Return a datetime.date object parsed with date.fromisoformat().
-    #   Raise ValueError if no match is found.
-    raise NotImplementedError("TODO 4: implement parse_date")
-
-
 def load(csv_path: Path) -> None:
-    # TODO 5: Parse the snapshot_date from csv_path using parse_date().
-    snapshot_date = None  # replace this
+    # TODO 4: Open csv_path and read it into a list of dicts.
+    #   Use csv.DictReader — it turns each row into a dict whose keys come
+    #   from the CSV header.
+    rows: list[dict] = []  # replace this
 
-    # TODO 6: Read the CSV file into a list of dicts (use csv.DictReader).
-    rows = []  # replace this
+    # TODO 5: The CSV stores is_forward_filled as the string "True" or "False".
+    #   Convert it to a Python bool for every row before inserting.
+    #   Hint: row["is_forward_filled"].lower() == "true"
 
-    # TODO 7: For each row, convert is_forward_filled from the string "True"/"False"
-    #   to a Python bool (hint: row["is_forward_filled"].lower() == "true").
-    #   Also add snapshot_date to each row dict.
-
-    # TODO 8: Open a database connection, create the table if it does not
-    #   exist, delete existing rows for this snapshot_date, insert all rows,
-    #   and commit.  Use get_connection() from shared.db.
+    # TODO 6: Convert rows to a list of tuples in column order:
+    #     (currency_code, currency, buying_rate, central_rate,
+    #      selling_rate, is_forward_filled)
+    #   Then open a DuckDB connection, run CREATE, TRUNCATE, and INSERT all
+    #   rows, then close the connection.
     #
     #   Pattern:
-    #     conn = get_connection()
-    #     try:
-    #         with conn.cursor() as cur:
-    #             cur.execute(CREATE)
-    #             cur.execute(DELETE, {"snapshot_date": snapshot_date})
-    #             cur.executemany(INSERT, rows)
-    #         conn.commit()
-    #     finally:
-    #         conn.close()
+    #     conn = duckdb.connect("cbn_fx.duckdb")
+    #     conn.execute(CREATE)
+    #     conn.execute(TRUNCATE)
+    #     conn.executemany(INSERT, rows_as_tuples)
+    #     conn.close()
 
-    print(f"Loaded {len(rows)} rows from {csv_path.name} (snapshot_date={snapshot_date})")
+    print(f"Loaded {len(rows)} rows from {csv_path.name}")
 
 
 # ---------------------------------------------------------------------------

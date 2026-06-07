@@ -101,81 +101,21 @@ How do you fix this going forward?
 *Take 2 minutes - propose a solution.*
 
 - **Keep multiple tables?** One per day - gets unwieldy fast.
-- **Add a date column?** But where does the date come from - the file doesn't have one.
-- **Use the filename?** The pipeline knows the date - it could stamp each row at load time.
+- **Add a date column?** But where does the date come from — the file doesn't have one.
 
----
-
-## 🖥️ Demo 2 - The Snapshot Solution
-
-The filename already tells us the date: `cbn_fx_rates_2026-05-14.csv`
-
-The file itself has no date column - so the pipeline extracts it and stamps every row.
-
-1. Add a `snapshot_date` column to the table
-2. At load time, parse the date from the filename and inject it into every row
-3. Reload the week - one file at a time
-4. Query: *"What was the GBP rate on Thursday?"*
-
-> The enrichment happens in the pipeline, not in the source. This is intentional.
-
----
-
-## Edge Case - The Weekend Files
-
-```text
-cbn_fx_rates_2026-05-16.csv   ← Saturday
-cbn_fx_rates_2026-05-17.csv   ← Sunday
-
-Both carry Friday's rates with is_forward_filled = True
-```
-
-**Discussion:**
-
-- Should your pipeline load these rows as-is?
-- Does it matter to the finance team that Saturday's rate is actually Friday's?
-- Who makes that decision - the pipeline or the consumer?
-
-*There is no wrong answer. The decision should be conscious.*
+> We'll explore the answer in week 2.
 
 ---
 
 ## The Pattern - Full Load
 
-| Property | |
-| --- | --- |
-| Strategy | Truncate target, insert full source snapshot |
-| Idempotent? | Yes - run it twice, same result |
-| History | Not preserved unless you stamp `snapshot_date` at load time |
-| Change detection | Not needed - you reload everything |
-| Best fit | Small reference data, complete snapshots, no delta available |
-
----
-
-## Act 3 - The Source Evolves
-
-> "Good news - the CBN is updating their format. Starting next month, every row will include a `rate_date` field showing when the rate was published."
-
-The new file looks like this:
-
-```text
-currency_code  currency          rate_date    buying_rate  central_rate  selling_rate  is_forward_filled
-USD            Us Dollar         2026-05-14   1369.8862    1370.3862     1370.8862     False
-USD            Us Dollar         2026-05-17   1369.8862    1370.3862     1370.8862     True   ← Sunday
-```
-
----
-
-## Discussion - Does Your Pipeline Still Work?
-
-You now have two date columns: `snapshot_date` (from the filename, added by you) and `rate_date` (from the source).
-
-- On a weekday, do they always match?
-- On a weekend, what does each one mean?
-- Does your target table schema need to change?
-- Is `rate_date` useful to keep, or is it redundant?
-
-*This is schema evolution - the source changed, now you decide how to absorb it.*
+| Property         |                                                             |
+| ---------------- | ----------------------------------------------------------- |
+| Strategy         | Truncate target, insert full source snapshot                |
+| Idempotent?      | Yes - run it twice, same result                             |
+| History          | Not preserved — every load replaces the entire table        |
+| Change detection | Not needed - you reload everything                          |
+| Best fit         | Small reference data, complete snapshots, no delta available|
 
 ---
 
@@ -183,17 +123,15 @@ You now have two date columns: `snapshot_date` (from the filename, added by you)
 
 - **Dataset is large?** Reloading 100M rows daily is expensive - consider incremental.
 - **Consumers need real-time?** Full-load is batch by nature.
-- **Source produces deletes?** Full-load handles them naturally. Incremental strategies often don't.
-- **History must be preserved?** Design for it from day one - stamp `snapshot_date` in the pipeline, not as an afterthought.
+- **Source produces deletes?** Full load handles them naturally. Incremental strategies often don't.
+- **History must be preserved?** Full load alone can't give you this — you need a different pattern.
 - **Source schema changes?** Your pipeline owns the contract - validate the file before loading.
 
 ---
 
-## Next Week - Incremental Load
+## Next Week - Snapshot Load
 
-Same dataset. Different strategy.
-
-What changes when the source gives you a change marker?
+Same dataset. Same source. Same pattern — but what if we stopped throwing history away?
 
 ---
 
