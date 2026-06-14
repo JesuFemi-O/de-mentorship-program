@@ -13,13 +13,13 @@ and the second run is a no-op (values written are identical to what is there).
 
 Setup (one-time):
     # Simulate the vendor delivering Monday's file to SFTP
-    python shared/clearwatch/simulate_vendor_day.py --date 2021-01-04
+    uv run shared/clearwatch/simulate_vendor_day.py --date 2021-01-04
 
     # Then Tuesday's file (some entities will have changed status or risk)
-    python shared/clearwatch/simulate_vendor_day.py --date 2021-01-05
+    uv run shared/clearwatch/simulate_vendor_day.py --date 2021-01-05
 
 Usage:
-    python week_2_incremental_load_ingestion/sftp_upsert.py
+    uv run week_2_incremental_load_ingestion/sftp_upsert.py
 
 Reset between full demos:
     psql -c "DROP TABLE IF EXISTS clearwatch_watchlist;"

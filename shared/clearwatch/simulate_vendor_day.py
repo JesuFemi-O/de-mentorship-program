@@ -106,42 +106,47 @@ def _random_past_date(rng: random.Random, earliest: date, latest: date) -> str:
 
 
 def generate_csv(run_date: date, n_records: int = 50) -> str:
-    # Seed both faker and the stdlib rng from the date so the output is
-    # reproducible: the same --date always produces the same file.
     seed = int(run_date.strftime("%Y%m%d"))
-    Faker.seed(seed)
-    fake = Faker(["en_NG", "en_GB"])
-    mp = MimesisPerson(Locale.EN, seed=seed)
-    rng = random.Random(seed)
 
     file_generated_at = f"{run_date} 09:00:00"
+    earliest_listing  = date(2015, 1, 1)
+    listing_cutoff    = date(2021, 1, 1)  # fixed upper bound so listed_date never shifts between runs
+
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=FIELDNAMES, lineterminator="\n")
     writer.writeheader()
 
-    earliest_listing = date(2015, 1, 1)
-
     for i in range(1, n_records + 1):
-        entity_type = rng.choice(ENTITY_TYPES)
-        watchlist = rng.choice(WATCHLIST_TYPES)
-        risk = _risk(watchlist, rng)
-        status = rng.choices(STATUSES, weights=[0.8, 0.2])[0]
-        country = rng.choice(COUNTRY_POOL)
-        listed = date.fromisoformat(
-            _random_past_date(rng, earliest_listing, run_date - timedelta(days=30))
+        # entity_rng is stable across days — identity fields never change for the same entity
+        entity_rng = random.Random(i)
+        # state_rng changes each day — reflects the vendor's latest review of the entity
+        state_rng  = random.Random(seed + i)
+
+        Faker.seed(i)
+        fake = Faker(["en_NG", "en_GB"])
+        mp   = MimesisPerson(Locale.EN, seed=i)
+
+        entity_type = entity_rng.choice(ENTITY_TYPES)
+        watchlist   = entity_rng.choice(WATCHLIST_TYPES)
+        country     = entity_rng.choice(COUNTRY_POOL)
+        listed      = date.fromisoformat(
+            _random_past_date(entity_rng, earliest_listing, listing_cutoff)
         )
-        last_reviewed = run_date - timedelta(days=rng.randint(0, 14))
+
+        risk          = _risk(watchlist, state_rng)
+        status        = state_rng.choices(STATUSES, weights=[0.8, 0.2])[0]
+        last_reviewed = run_date - timedelta(days=state_rng.randint(0, 14))
         last_reviewed = max(last_reviewed, listed)
 
         if entity_type == "PERSON":
-            name = f"{fake.first_name()} {mp.last_name()}"
-            dob = fake.date_of_birth(minimum_age=25, maximum_age=75).isoformat()
-            reg = ""
-            aliases = _aliases(name, rng)
+            name    = f"{fake.first_name()} {mp.last_name()}"
+            dob     = fake.date_of_birth(minimum_age=25, maximum_age=75).isoformat()
+            reg     = ""
+            aliases = _aliases(name, entity_rng)
         else:
-            name = f"{fake.word().title()} {fake.word().title()} Ltd-{i:03d}"
-            dob = ""
-            reg = f"RC{rng.randint(100000, 999999)}"
+            name    = f"{fake.word().title()} {fake.word().title()} Ltd-{i:03d}"
+            dob     = ""
+            reg     = f"RC{entity_rng.randint(100000, 999999)}"
             aliases = f"{fake.word().title()} {fake.word().title()}|{fake.word().title()} Ltd"
 
         writer.writerow({

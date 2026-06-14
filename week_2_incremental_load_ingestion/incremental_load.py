@@ -13,11 +13,11 @@ run it twice for the same date and 0 rows are inserted the second time.
 
 Usage:
     # Backfill - load an entire directory
-    python week_2_incremental_load_ingestion/incremental_load.py \\
+    uv run week_2_incremental_load_ingestion/incremental_load.py \\
         week_2_incremental_load_ingestion/data/cbn/history/
 
     # Daily - load a single file
-    python week_2_incremental_load_ingestion/incremental_load.py \\
+    uv run week_2_incremental_load_ingestion/incremental_load.py \\
         week_2_incremental_load_ingestion/data/cbn/recent/cbn_fx_rates_2026-06-09.csv
 
 Reset between full demos:
@@ -115,5 +115,5 @@ def main(target: Path) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        sys.exit("Usage: python incremental_load.py <csv_file_or_directory>")
+        sys.exit("Usage: uv run incremental_load.py <csv_file_or_directory>")
     main(Path(sys.argv[1]))

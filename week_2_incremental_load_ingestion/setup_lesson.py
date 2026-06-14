@@ -1,22 +1,16 @@
 """
 Generate CBN FX rate CSVs for the incremental-load lesson.
 
-Produces two batches:
-  - history/   3 months of weekday files (Jan-Mar 2026) - the "historical dump"
-  - recent/    the current week - the "new daily files arriving incrementally"
+Always produces two batches relative to today:
+  - history/   1 Jan of the current year  ->  today - 7 days
+  - recent/    today - 6 days             ->  today
+
+Run it any day and it produces the right data for that day's lesson.
 
 Usage:
     python week_2_incremental_load_ingestion/setup_lesson.py
-
-    # Custom history range
-    python week_2_incremental_load_ingestion/setup_lesson.py \\
-        --history-start 2026-01-01 --history-end 2026-03-31
-
-    # Custom recent week
-    python week_2_incremental_load_ingestion/setup_lesson.py --recent-week 2026-06-09
 """
 
-import argparse
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -31,7 +25,7 @@ def generate_range(start: date, end: date, output_dir: Path, all_records: list) 
     written = 0
     current = start
     while current <= end:
-        rows, forward_filled = extract_for_date(all_records, current)
+        rows, _ = extract_for_date(all_records, current)
         if rows:
             write_csv(rows, current, output_dir, include_rate_date=True)
             written += 1
@@ -40,32 +34,28 @@ def generate_range(start: date, end: date, output_dir: Path, all_records: list) 
 
 
 if __name__ == "__main__":
-    TODAY = date.today()
-    parser = argparse.ArgumentParser(
-        description="Generate CBN FX CSVs for the week 2 lesson (history + recent)"
-    )
-    parser.add_argument("--history-start", default="2026-01-01", metavar="YYYY-MM-DD")
-    parser.add_argument("--history-end",   default="2026-03-31", metavar="YYYY-MM-DD")
-    parser.add_argument("--recent-week",   default=None, metavar="YYYY-MM-DD",
-                        help="Any date in the recent week (default: current week)")
+    today = date.today()
+
+    # Most recent weekday (today if Mon-Fri, else last Friday)
+    days_back = max(1, today.weekday() - 4) if today.weekday() >= 5 else 0
+    last_weekday = today - timedelta(days=days_back) if today.weekday() >= 5 else today
+
+    history_start = date(today.year, 1, 1)
+    history_end   = last_weekday - timedelta(days=1)
+    recent_start  = last_weekday
+    recent_end    = last_weekday
+
     base = Path(__file__).parent / "data" / "cbn"
-    args = parser.parse_args()
 
-    history_start = date.fromisoformat(args.history_start)
-    history_end   = date.fromisoformat(args.history_end)
-    anchor        = date.fromisoformat(args.recent_week) if args.recent_week else TODAY
-    recent_start  = anchor - timedelta(days=anchor.weekday())
-    recent_end    = recent_start + timedelta(days=6)
-
-    print("Fetching CBN rate history…")
+    print("Fetching CBN rate history...")
     all_records = fetch_all_records()
     print(f"  {len(all_records)} records in model.\n")
 
-    print(f"Generating history/  ({history_start} → {history_end})")
+    print(f"Generating history/  ({history_start} -> {history_end})")
     n = generate_range(history_start, history_end, base / "history", all_records)
     print(f"  {n} files written.\n")
 
-    print(f"Generating recent/   ({recent_start} → {recent_end})")
+    print(f"Generating recent/   ({recent_start} -> {recent_end})")
     n = generate_range(recent_start, recent_end, base / "recent", all_records)
     print(f"  {n} files written.\n")
 
