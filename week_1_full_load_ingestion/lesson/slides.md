@@ -145,7 +145,7 @@ Two parts. Both live in `week_1_full_load_ingestion/assignment/`.
 
 Fill in `assignment/discussion.md`.
 
-Find a real system, dataset, or workflow where full-load is either the right pattern or the wrong one. Come ready to present in 2–3 minutes:
+Find a real system, dataset, or workflow where full-load is either the right pattern or the wrong one. Come ready to present in 2-3 minutes:
 
 1. **What is the source?** How is the data delivered?
 2. **Why does full-load fit (or not fit)?** Think about size, frequency, history, and whether the source gives you change information.

@@ -102,7 +102,7 @@ def fetch_all_records() -> list[dict]:
     current = _HISTORY_START
 
     while current <= end_date:
-        if current.weekday() < 5:  # Mon–Fri only
+        if current.weekday() < 5:  # Mon-Fri only
             rng = random.Random(int(current.strftime("%Y%m%d")))
             date_str = current.isoformat()
             for cbn_name, (base_central, base_spread) in _BASE_RATES.items():

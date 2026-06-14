@@ -40,14 +40,21 @@ from shared.db import get_connection
 #   Use CREATE TABLE IF NOT EXISTS so re-running doesn't fail if the table
 #   already exists.
 CREATE = """
--- TODO 1: write the CREATE TABLE IF NOT EXISTS statement here
+CREATE TABLE IF NOT EXISTS cbn_fx_rates (
+    currency_code TEXT,
+    currency TEXT,
+    buying_rate NUMERIC(12, 4),
+    central_rate NUMERIC(12, 4),
+    selling_rate NUMERIC(12, 4),
+    is_forward_filled BOOLEAN
+)
 """
 
 # TODO 2: Write the TRUNCATE statement.
 #   This wipes the whole table before every load - that is what makes it
 #   "naive".  A single SQL keyword is enough.
 TRUNCATE = """
--- TODO 2: write the TRUNCATE statement here
+TRUNCATE TABLE cbn_fx_rates
 """
 
 # TODO 3: Write the INSERT statement.
@@ -55,37 +62,34 @@ TRUNCATE = """
 #   The column names must match the keys in the row dicts you will build
 #   from the CSV.
 INSERT = """
--- TODO 3: write the INSERT statement here
+INSERT INTO cbn_fx_rates
+    (currency_code, currency, buying_rate, central_rate, selling_rate, is_forward_filled)
+VALUES
+    (%(currency_code)s, %(currency)s, %(buying_rate)s, %(central_rate)s,
+     %(selling_rate)s, %(is_forward_filled)s);
 """
 
 
 # ---------------------------------------------------------------------------
 # Load function - fill in the blanks
 # ---------------------------------------------------------------------------
-
 def load(csv_path: Path) -> None:
-    # TODO 4: Open csv_path and read it into a list of dicts.
-    #   Use csv.DictReader - it turns each row into a dict whose keys come
-    #   from the CSV header.
-    rows = []  # replace this
+    with open(csv_path, newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    for row in rows:
+        row["is_forward_filled"] = row["is_forward_filled"].lower() == "true"
 
-    # TODO 5: The CSV stores is_forward_filled as the string "True" or "False".
-    #   Convert it to a Python bool for every row before inserting.
-    #   Hint: row["is_forward_filled"].lower() == "true"
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(CREATE)
+            cur.execute(TRUNCATE)
+            cur.executemany(INSERT, rows)
+        conn.commit()
+        print(f"Loaded {len(rows)} rows from {csv_path.name}")
+    finally:
+        conn.close()
 
-    # TODO 6: Open a database connection and run the three SQL statements in
-    #   order - CREATE, TRUNCATE, then INSERT all rows - then commit.
-    #
-    #   Pattern to follow:
-    #     conn = get_connection()
-    #     try:
-    #         with conn.cursor() as cur:
-    #             cur.execute(CREATE)
-    #             cur.execute(TRUNCATE)
-    #             cur.executemany(INSERT, rows)
-    #         conn.commit()
-    #     finally:
-    #         conn.close()
 
     print(f"Loaded {len(rows)} rows from {csv_path.name}")
 
