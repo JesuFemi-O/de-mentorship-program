@@ -68,6 +68,8 @@ Key targets:
 | `make logs SVC=kafka` | Tail logs for a specific service |
 | `make topics-list` | List all Kafka topics |
 | `make connectors-status` | Show connector task states |
+| `make connector-deploy NAME=<connector>` | Deploy a single connector by config file name |
+| `make connector-delete NAME=<connector>` | Delete a single connector by name |
 
 Bucket definitions: `infrastructure/buckets/buckets.json`
 Connector configs: `infrastructure/connectors/*.json`
