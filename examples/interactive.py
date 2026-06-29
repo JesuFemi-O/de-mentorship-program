@@ -85,10 +85,15 @@ def main():
         print(f"  Failed to connect: {e}")
         sys.exit(1)
 
+    schema = input("Schema name [interactive_examples]: ").strip() or "interactive_examples"
     table = input("Table name [orders]: ").strip() or "orders"
     batch_size = prompt_int("Default batch size", 100)
 
-    manager = SchemaManager(conn, "public", table, ORDERS_COLUMNS)
+    with conn.cursor() as cur:
+        cur.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
+    conn.commit()
+
+    manager = SchemaManager(conn, schema, table, ORDERS_COLUMNS)
     reset = input("Reset table? (drop + recreate) [y/N]: ").strip().lower()
     if reset == "y":
         manager.drop_table()
@@ -97,7 +102,7 @@ def main():
     generator = BatchGenerator(schema=manager.get_active_columns())
     engine = MutationEngine(
         conn=conn,
-        schema="public",
+        schema=schema,
         table_name=table,
         primary_key="id",
         update_column="updated_at",
@@ -115,7 +120,7 @@ def main():
     last_ids: list[str] = []
     batch_num = 0
 
-    print(f"\nReady. Table '{table}' is set up with {len(manager.get_active_columns())} columns.\n")
+    print(f"\nReady. Table '{schema}.{table}' is set up with {len(manager.get_active_columns())} columns.\n")
 
     while True:
         print(MENU)

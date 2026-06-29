@@ -1,0 +1,42 @@
+docker exec postgres psql -U postgres -d cdcdemo -c \
+    "ALTER TABLE interactive_examples.orders REPLICA IDENTITY FULL;"
+
+
+INSTALL httpfs;
+LOAD httpfs;
+
+CREATE OR REPLACE SECRET seaweed (
+    TYPE s3,
+    KEY_ID 'seaweed',
+    SECRET 'seaweed123',
+    ENDPOINT 'localhost:8333',
+    URL_STYLE 'path',
+    USE_SSL false
+);
+
+
+SELECT *
+FROM read_parquet(
+    's3://cdc-events/**/*.parquet',
+    hive_partitioning = true
+)
+order by __source_ts_ms desc;
+
+
+SELECT __op, COUNT(*)
+FROM read_parquet('s3://cdc-events/**/*.parquet', hive_partitioning = true)
+WHERE year = '2026' AND month = '06'
+GROUP BY __op;
+
+WITH ranked AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            PARTITION BY id
+            ORDER BY __source_ts_ms DESC, updated_at DESC
+        ) AS rn
+    FROM read_parquet('s3://cdc-events/**/*.parquet', hive_partitioning = true)
+)
+SELECT * EXCLUDE (rn)
+FROM ranked
+WHERE rn = 1
+  AND __op <> 'd';

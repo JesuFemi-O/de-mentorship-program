@@ -1,0 +1,21 @@
+{
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "tasks.max": "1",
+  "database.hostname": "postgres",
+  "database.port": "5432",
+  "database.user": "postgres",
+  "database.password": "postgres",
+  "database.dbname": "cdcdemo",
+  "topic.prefix": "interactive",
+  "schema.include.list": "interactive_examples",
+  "table.include.list": "interactive_examples\\..*",
+  "plugin.name": "pgoutput",
+  "publication.name": "dbz_interactive_pub",
+  "publication.autocreate.mode": "all_tables",
+  "slot.name": "dbz_interactive_slot",
+  "snapshot.mode": "initial",
+  "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "key.converter.schemas.enable": "false",
+  "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "value.converter.schemas.enable": "false"
+}
