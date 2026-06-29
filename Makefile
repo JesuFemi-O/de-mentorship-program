@@ -1,7 +1,8 @@
 .PHONY: help up down restart logs ps clean clean-data \
         topics-list topics-describe topics-delete topics-consume \
         buckets buckets-list \
-        connectors connectors-list connectors-status connectors-delete \
+        connectors connector-deploy connectors-list connectors-status \
+        connectors-delete connector-delete \
         deploy verify smoke
 
 # Load .env if present
@@ -94,6 +95,21 @@ connectors:  ## Deploy all connectors in infrastructure/connectors/*.json (idemp
 	    --data @$$f \
 	    $(CONNECT_URL)/connectors/$$name/config > /dev/null && echo "  OK" || echo "  FAILED"; \
 	done
+
+connector-deploy:  ## Deploy a single connector (use NAME=<connector>)
+	@if [ -z "$(NAME)" ]; then echo "Usage: make connector-deploy NAME=<connector>"; exit 2; fi
+	@f=infrastructure/connectors/$(NAME).json; \
+	if [ ! -f $$f ]; then echo "No config found: $$f"; exit 1; fi; \
+	echo "Deploying connector: $(NAME)"; \
+	curl -fsS -X PUT \
+	  -H "Content-Type: application/json" \
+	  --data @$$f \
+	  $(CONNECT_URL)/connectors/$(NAME)/config > /dev/null && echo "  OK" || { echo "  FAILED"; exit 1; }
+
+connector-delete:  ## Delete a single connector (use NAME=<connector>)
+	@if [ -z "$(NAME)" ]; then echo "Usage: make connector-delete NAME=<connector>"; exit 2; fi
+	@echo "Deleting connector: $(NAME)"
+	@curl -fsS -X DELETE $(CONNECT_URL)/connectors/$(NAME) && echo "  OK" || echo "  not found"
 
 connectors-list:  ## List deployed connectors
 	@curl -s $(CONNECT_URL)/connectors | jq
